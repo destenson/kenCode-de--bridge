@@ -1,0 +1,10 @@
+*
+
+!.gitignore
+!Makefile
+!**/
+
+*.o
+.settings/language.settings.xml
+test/test_bridge
+main/bridge
