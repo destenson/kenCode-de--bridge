@@ -10,10 +10,12 @@ struct Book {
  * Retrieve the price for (qty) coins on
  * either the bid or ask
  * @param side bid or ask
+ * @param currency_from the currency we wish to exchange
+ * @param currency_to the currency we wish to receive
  * @param qty the quantity to ask for
- * @returns the price of the coins, or negative number on error
+ * @returns the price of [qty] of [currency_to], or negative number on error
  */
-double (*quote)(enum Side side, double qty);
+double (*quote)(enum Side side, const char* currency_from, const char* currency_to, double qty);
 
 };
 
@@ -23,3 +25,9 @@ double (*quote)(enum Side side, double qty);
  * @returns the struct Book for that vendor, or NULL on error
  */
 struct Book* book_for_vendor(const char* vendor);
+
+// vendors
+// bittrex
+double book_bittrex_quote(enum Side side, const char* currency_from, const char* currency_to, double qty);
+// mock
+double book_mock_quote(enum Side side, const char* currency_from, const char* currency_to, double qty);

@@ -1,9 +1,10 @@
 CC = gcc
 CFLAGS = -O0 -I../include -g3 -Wall
-LFLAGS = 
+LFLAGS = -lcurl
 DEPS = test_book.h
 OBJS = testit.o \
-	../book/book.o ../book/mock_book.o
+	../book/book.o ../book/mock.o ../book/bittrex.o \
+	../utils/https.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

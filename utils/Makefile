@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -O0 -I../include -g3 -Wall
 LFLAGS = 
-DEPS = ../include/bridge/book.h ../include/bridge/book_mock.h
-OBJS =  book.o mock.o bittrex.o
+DEPS = ../include/utils/https.h
+OBJS =  https.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
