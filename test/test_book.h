@@ -3,26 +3,72 @@
 #include "../include/bridge/book.h"
 
 int test_book_mock() {
-	struct Book* mock = book_for_vendor("mock");
+	int retVal = 0;
+	struct Vendor* vendor = NULL;
+	struct Market* market = NULL;
+	struct Book* book = NULL;
 
-	if (mock->quote(SIDE_BIDS, "BTC", "USD", 2) > 0)
-		return 0;
+	vendor = vendor_get("mock");
+	if (vendor == NULL)
+		goto exit;
+	market = vendor->markets_get();
+	if (market == NULL)
+		goto exit;
+	book = vendor->books_get(market);
+	if (book == NULL)
+		goto exit;
 
-	free(mock);
+	if (book->bid_price <= 0)
+		goto exit;
 
-	return 1;
+	retVal = 1;
+
+	exit:
+
+	if (book != NULL)
+		book_free(book);
+	if (market != NULL)
+		market_free(market);
+	if (vendor != NULL)
+		free(vendor);
+
+	return retVal;
 }
 
 int test_book_bittrex() {
 	int ret = 0;
-	struct Book* bittrex = book_for_vendor("bittrex");
-	double result = bittrex->quote(SIDE_BIDS, "BTC", "LTC", 1);
-	if (result < 0)
+	struct Vendor* bittrex = NULL;
+	struct Market* market = NULL;
+	struct Book* book = NULL;
+	const struct Market* btcltc = NULL;
+
+	bittrex = vendor_get("bittrex");
+	if (bittrex == NULL)
 		goto exit;
+	market = bittrex->markets_get();
+	if (market == NULL)
+		goto exit;
+	btcltc = market_get(market, "BTC", "LTC");
+	if (btcltc == NULL)
+		goto exit;
+
+	book = bittrex->books_get(btcltc);
+
+	if (book == NULL)
+		goto exit;
+
+	if (book->next == NULL)
+		goto exit;
+
 	ret = 1;
 
 	exit:
-	free(bittrex);
+	if (book != NULL)
+		book_free(book);
+	if (market != NULL)
+		market_free(market);
+	if (bittrex != NULL)
+		free(bittrex);
 	return ret;
 }
 

@@ -5,18 +5,24 @@
 enum Side { SIDE_BIDS, SIDE_ASKS };
 
 struct Book {
+	double bid_qty;
+	double bid_price;
+	double ask_qty;
+	double ask_price;
+	struct Book* next;
+};
 
-/***
- * Retrieve the price for (qty) coins on
- * either the bid or ask
- * @param side bid or ask
- * @param currency_from the currency we wish to exchange
- * @param currency_to the currency we wish to receive
- * @param qty the quantity to ask for
- * @returns the price of [qty] of [currency_to], or negative number on error
- */
-double (*quote)(enum Side side, const char* currency_from, const char* currency_to, double qty);
+struct Market {
+	char* market_name;
+	char* market_currency;
+	char* base_currency;
+	double min_trade_size;
+	struct Market* next;
+};
 
+struct Vendor {
+	struct Book* (*books_get)(const struct Market* market);
+	struct Market* (*markets_get)();
 };
 
 /***
@@ -24,10 +30,17 @@ double (*quote)(enum Side side, const char* currency_from, const char* currency_
  * @param vendor the name of the vendor
  * @returns the struct Book for that vendor, or NULL on error
  */
-struct Book* book_for_vendor(const char* vendor);
+struct Vendor* vendor_get(const char* vendor_name);
+
+const struct Market* market_get(const struct Market* head, const char* base_currency, const char* market_currency);
+
+void market_free(struct Market* market);
+void book_free(struct Book* book);
 
 // vendors
 // bittrex
-double book_bittrex_quote(enum Side side, const char* currency_from, const char* currency_to, double qty);
+struct Book* bittrex_get_books(const struct Market* market);
+struct Market* bittrex_get_markets();
 // mock
-double book_mock_quote(enum Side side, const char* currency_from, const char* currency_to, double qty);
+struct Book* mock_get_books(const struct Market* market);
+struct Market* mock_get_markets();
