@@ -52,12 +52,11 @@ struct Market* book_bittrex_parse_market(const char* json) {
 		return NULL;
 	// loop through markets
 	while (start_pos != 0) {
-		current = (struct Market*)malloc(sizeof(struct Market));
+		current = market_new();
 		if (current == NULL) {
 			free(head);
 			return NULL;
 		}
-		current->next = NULL;
 		start_pos = json_get_string_value(json, tokens, total_tokens, start_pos, "MarketCurrency", &current->market_currency);
 		if (start_pos == 0) {
 			free(current);
@@ -89,17 +88,17 @@ struct Market* book_bittrex_parse_market(const char* json) {
 		if (start_pos == 0 || !active ) {
 			free(current->market_currency);
 			free(current->base_currency);
+			free(current->market_name);
 			free(current);
 			continue;
 		}
 		// add it to the list
 		if (head == NULL) {
 			head = current;
-		}
-		if (last != NULL) {
+		} else {
 			last->next = current;
-			last = current;
 		}
+		last = current;
 	}
 	return head;
 }
@@ -140,11 +139,11 @@ struct Book* book_bittrex_parse_book(const char* json) {
 			current->bid_price = rate;
 			if (book == NULL) {
 				book = current;
-			}
-			if (last != NULL) {
-				last->next = current;
 				last = current;
+			} else {
+				last->next = current;
 			}
+			last = current;
 		}
 	}
 	// loop for the ask

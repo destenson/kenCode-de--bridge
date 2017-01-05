@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "bridge/book.h"
 
@@ -11,10 +12,11 @@ double book_mock_quote(enum Side side, const char* currency_from, const char* cu
 }
 
 struct Market* mock_get_markets() {
-	struct Market* market = (struct Market*) malloc(sizeof(struct Market));
-	market->next = NULL;
-	market->base_currency = "BTC";
-	market->market_currency = "LTC";
+	struct Market* market = market_new();
+	market->base_currency = malloc(4);
+	strcpy(market->base_currency, "BTC");
+	market->market_currency = malloc(4);
+	strcpy(market->market_currency, "LTC");
 	market->min_trade_size = 0.01;
 	return market;
 }

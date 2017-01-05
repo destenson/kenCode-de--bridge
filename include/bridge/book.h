@@ -34,6 +34,7 @@ struct Vendor* vendor_get(const char* vendor_name);
 
 const struct Market* market_get(const struct Market* head, const char* base_currency, const char* market_currency);
 
+struct Market* market_new();
 void market_free(struct Market* market);
 void book_free(struct Book* book);
 

@@ -16,13 +16,15 @@ int testit(const char* name, int (*func)(void)) {
 const char* names[] = {
 		"test_book_mock",
 		"test_book_bittrex_url",
-		"test_book_bittrex"
+		"test_book_bittrex",
+		"test_market_bittrex"
 };
 
 int (*funcs[])(void) = {
 		test_book_mock,
 		test_book_bittrex_url,
-		test_book_bittrex
+		test_book_bittrex,
+		test_market_bittrex
 };
 
 /**

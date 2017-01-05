@@ -55,7 +55,7 @@ int utils_https_get(const char* url, char** results) {
 			*results = chunk.memory;
 		}
 		curl_easy_cleanup(curl);
-		curl_global_cleanup();
 	}
+	curl_global_cleanup();
 	return 0;
 }

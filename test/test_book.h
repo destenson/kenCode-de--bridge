@@ -34,6 +34,31 @@ int test_book_mock() {
 
 	return retVal;
 }
+int test_market_bittrex() {
+	int ret = 0;
+	struct Vendor* bittrex = NULL;
+	struct Market* market = NULL;
+
+	bittrex = vendor_get("bittrex");
+	if (bittrex == NULL)
+		goto exit;
+	market = bittrex->markets_get();
+	if (market == NULL)
+		goto exit;
+
+	if (market->next == NULL)
+		goto exit;
+
+	ret = 1;
+
+	exit:
+	if (market != NULL)
+		market_free(market);
+	if (bittrex != NULL)
+		free(bittrex);
+	return ret;
+
+}
 
 int test_book_bittrex() {
 	int ret = 0;

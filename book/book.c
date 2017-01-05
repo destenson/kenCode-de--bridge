@@ -41,6 +41,17 @@ void book_free(struct Book* book) {
 	}
 }
 
+struct Market* market_new() {
+	struct Market* market = (struct Market*)malloc(sizeof(struct Market));
+	if (market == NULL)
+		return NULL;
+	market->base_currency = NULL;
+	market->market_currency = NULL;
+	market->market_name = NULL;
+	market->next = NULL;
+	market->min_trade_size = 0.0;
+	return market;
+}
 /**
  * Free memory resources used by linked list of Market
  * @param market the parent node of the market list
@@ -50,6 +61,12 @@ void market_free(struct Market* market) {
 		struct Market* current = market;
 		struct Market* next = market->next;
 		while (current != NULL) {
+			if (current->base_currency != NULL)
+				free(current->base_currency);
+			if (current->market_currency != NULL)
+				free(current->market_currency);
+			if (current->market_name != NULL)
+				free(current->market_name);
 			free(current);
 			current = next;
 			if (current != NULL)
