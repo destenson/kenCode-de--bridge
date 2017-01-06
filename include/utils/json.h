@@ -47,3 +47,5 @@ int json_get_int_value(const char* data, const jsmntok_t* tokens, int tok_length
  * @returns true(1) on success
  */
 int json_get_double_value(const char* data, const jsmntok_t* tokens, int tok_length, int search_from, const char* tag, double* result);
+
+void json_get_double(const char* data, const jsmntok_t token, double* result);

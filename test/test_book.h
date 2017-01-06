@@ -59,6 +59,42 @@ int test_market_bittrex() {
 	return ret;
 
 }
+int test_book_btc38() {
+	int ret = 0;
+	struct Vendor* vendor = NULL;
+	struct Market* market = NULL;
+	struct Book* book = NULL;
+	const struct Market* btcltc = NULL;
+
+	vendor = vendor_get("btc38");
+	if (vendor == NULL)
+		goto exit;
+	market = vendor->markets_get();
+	if (market == NULL)
+		goto exit;
+	btcltc = market_get(market, "BTC", "QRK");
+	if (btcltc == NULL)
+		goto exit;
+
+	book = vendor->books_get(btcltc);
+
+	if (book == NULL)
+		goto exit;
+
+	if (book->next == NULL)
+		goto exit;
+
+	ret = 1;
+
+	exit:
+	if (book != NULL)
+		book_free(book);
+	if (market != NULL)
+		market_free(market);
+	if (vendor != NULL)
+		free(vendor);
+	return ret;
+}
 
 int test_book_bittrex() {
 	int ret = 0;

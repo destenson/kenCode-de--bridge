@@ -135,3 +135,29 @@ int json_get_double_value(const char* data, const jsmntok_t* tokens, int tok_len
 		*result = atof(str);
 	return pos;
 }
+
+/**
+ * Retrieves the value of a double pointed to by token_no
+ * @param data the full JSON string
+ * @param curr_token the tokens that contains the position of the data
+ * @param result where to put the result
+ */
+void json_get_double(const char* data, const jsmntok_t curr_token, double* result) {
+	if (curr_token.type != JSMN_PRIMITIVE)
+		return;
+	// allocate memory
+	int str_len = curr_token.end - curr_token.start;
+	char str[str_len + 1];
+	// copy in the string
+	strncpy(str, &data[curr_token.start], str_len);
+	str[str_len] = 0;
+	if (strcmp(str, "true") == 0)
+		*result = 1;
+	else if (strcmp(str, "false") == 0)
+		*result = 0;
+	else if (strcmp(str, "null") == 0) // what should we do here?
+		*result = 0;
+	else // its a real number
+		*result = atof(str);
+	return;
+}

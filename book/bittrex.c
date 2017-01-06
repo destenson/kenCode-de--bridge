@@ -10,6 +10,7 @@
 #include "utils/json.h"
 
 const char* url = "https://bittrex.com/api/v1.1/";
+// TODO: these are test values. They need to be replaced
 const char* apikey = "55bbbe56a47046ac858f26110b044b6d";
 const char* apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
 
@@ -133,8 +134,7 @@ struct Book* book_bittrex_parse_book(const char* json) {
 		if (start_pos == 0)
 			continue;
 		if (start_pos < sell_pos) {
-			current = (struct Book*)malloc(sizeof(struct Book));
-			current->next = NULL;
+			current = book_new();
 			current->bid_qty = quantity;
 			current->bid_price = rate;
 			if (book == NULL) {
@@ -160,8 +160,7 @@ struct Book* book_bittrex_parse_book(const char* json) {
 			continue;
 		if (current == NULL) {
 			// need to add new Book to list
-			current = (struct Book*)malloc(sizeof(struct Book));
-			current->next = NULL;
+			current = book_new();
 			if (last == NULL) {
 				// we don't have "book" yet
 				book = current;

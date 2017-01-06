@@ -36,6 +36,7 @@ const struct Market* market_get(const struct Market* head, const char* base_curr
 
 struct Market* market_new();
 void market_free(struct Market* market);
+struct Book* book_new();
 void book_free(struct Book* book);
 
 // vendors
@@ -45,3 +46,6 @@ struct Market* bittrex_get_markets();
 // mock
 struct Book* mock_get_books(const struct Market* market);
 struct Market* mock_get_markets();
+//btc38
+struct Book* btc38_get_books(const struct Market* market);
+struct Market* btc38_get_markets();

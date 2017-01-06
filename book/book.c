@@ -21,7 +21,23 @@ struct Vendor* vendor_get(const char* vendor_name) {
 		vendor->books_get = bittrex_get_books;
 		vendor->markets_get = bittrex_get_markets;
 	}
+	if (strcmp(vendor_name, "btc38") == 0) {
+		vendor->books_get = btc38_get_books;
+		vendor->markets_get = btc38_get_markets;
+	}
 	return vendor;
+}
+
+struct Book* book_new() {
+	struct Book* book = (struct Book*)malloc(sizeof(struct Book));
+	if (book != NULL) {
+		book->ask_price = 0.0;
+		book->ask_qty = 0.0;
+		book->bid_price = 0.0;
+		book->bid_qty = 0.0;
+		book->next = NULL;
+	}
+	return book;
 }
 
 /**
