@@ -31,7 +31,7 @@ int test_book_mock() {
 	if (market != NULL)
 		market_free(market);
 	if (vendor != NULL)
-		free(vendor);
+		vendor_free(vendor);
 
 	return retVal;
 }
@@ -56,7 +56,7 @@ int test_market_bittrex() {
 	if (market != NULL)
 		market_free(market);
 	if (bittrex != NULL)
-		free(bittrex);
+		vendor_free(bittrex);
 	return ret;
 
 }
@@ -93,7 +93,7 @@ int test_book_btc38() {
 	if (market != NULL)
 		market_free(market);
 	if (vendor != NULL)
-		free(vendor);
+		vendor_free(vendor);
 	return ret;
 }
 
@@ -130,7 +130,7 @@ int test_book_bittrex() {
 	if (market != NULL)
 		market_free(market);
 	if (bittrex != NULL)
-		free(bittrex);
+		vendor_free(bittrex);
 	return ret;
 }
 
@@ -224,6 +224,6 @@ int test_book_poloniex() {
 	if (market != NULL)
 		market_free(market);
 	if (vendor != NULL)
-		free(vendor);
+		vendor_free(vendor);
 	return ret;
 }

@@ -214,7 +214,9 @@ struct Market* btc38_get_markets() {
 		free(url);
 		return btc_market;
 	}
+	free(url);
 	struct Market* cny_market = btc38_parse_market(json, "cny");
+	free(json);
 	// now merge
 	struct Market* market = btc_market;
 	struct Market* last = market;

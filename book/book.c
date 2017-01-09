@@ -4,7 +4,6 @@
 
 #include "bridge/book.h"
 
-int market_timeout = 180; // 3 minutes = 180s
 /***
  * interface to the different vendors' books
  */
@@ -44,6 +43,7 @@ void vendor_free(struct Vendor* vendor) {
 }
 
 void* market_update_loop(void* args) {
+	int market_timeout = 1800; // 3 minutes
 	struct Vendor* vendor = (struct Vendor*)args;
 	struct Market* to_be_deleted = NULL;
 	do {

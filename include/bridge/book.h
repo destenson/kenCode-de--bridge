@@ -47,6 +47,9 @@ struct VendorList {
 	struct VendorList* next;
 };
 
+struct Vendor* vendor_new();
+void vendor_free(struct Vendor* vendor);
+
 /**
  * Retrieves all known vendors
  * @returns a struct VendorList that is a linked list to each vendor

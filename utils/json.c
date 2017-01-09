@@ -148,6 +148,7 @@ void json_get_double(const char* data, const jsmntok_t curr_token, double* resul
 	// allocate memory
 	int str_len = curr_token.end - curr_token.start;
 	char str[str_len + 1];
+	str[0] = 0;
 	// copy in the string
 	strncpy(str, &data[curr_token.start], str_len);
 	str[str_len] = 0;

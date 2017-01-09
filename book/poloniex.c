@@ -92,6 +92,7 @@ struct Market* poloniex_parse_market(const char* json) {
 		// market_name
 		current->market_name = malloc(strlen(full_ticker) + 1);
 		strcpy(current->market_name, full_ticker);
+		free(full_ticker);
 		// add it to the list
 		if (head == NULL) {
 			head = current;
@@ -139,6 +140,8 @@ struct Book* poloniex_parse_book(const char* json) {
 		sell_pos = tok_no;
 	// find where is the "bids"
 	int bid_pos = json_find_token(json, tokens, tok_no, start_pos, "bids");
+	if (bid_pos == 0)
+		return NULL;
 	start_pos = sell_pos + 3;
 	// loop for the asks
 	while (start_pos != 0 && start_pos < bid_pos) {
@@ -166,14 +169,18 @@ struct Book* poloniex_parse_book(const char* json) {
 	// loop for the bids
 	start_pos = bid_pos + 3;
 	current = book;
-	while (start_pos != 0) {
+	while (start_pos != 0 && start_pos < tok_no) {
 		double quantity = 0;
 		double rate = 0;
 		json_get_double(json, tokens[start_pos], &quantity);
 		start_pos++;
+		if (start_pos >= tok_no) {
+			start_pos = 0;
+			continue;
+		}
 		json_get_double(json, tokens[start_pos], &rate);
 		start_pos += 2;
-		if (start_pos > tok_no) {
+		if (start_pos >= tok_no) {
 			start_pos = 0;
 			continue;
 		}
