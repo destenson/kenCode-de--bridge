@@ -194,10 +194,64 @@ struct Book* btc38_get_books(const struct Market* market) {
 struct Market* btc38_get_markets() {
 	char* url;
 	btc38_build_url("ticker.php?c=all&mk_type=btc", &url);
-	char* results;
-	utils_https_get(url, &results);
+	char* json;
+	int retVal = utils_https_get(url, &json);
+	if (retVal != 0) {
+		fprintf(stderr, "HTTP call to %s returned %d\n", url, retVal);
+		free(url);
+		return NULL;
+	}
 	free(url);
-	struct Market* market = btc38_parse_market(results, "btc");
-	free(results);
+	// yes this is crazy, but diagnosing a problem
+	// start of btc38_parse_market(results, "btc");
+	struct Market* head = NULL;
+	struct Market* current = head;
+	struct Market* last = head;
+	const char* base_currency = "btc";
+	jsmntok_t tokens[65535];
+
+	// parse json
+	int total_tokens = json_parse(json, tokens, 65535);
+	if (total_tokens < 0)
+		return NULL;
+	int base_currency_length = strlen(base_currency)+1;
+	char base_currency_upper[base_currency_length];
+	strcpy(base_currency_upper, base_currency);
+	btc38_all_upper(base_currency_upper);
+	int start_pos = 1;
+	// loop through markets
+	while (start_pos != 0) {
+		current = market_new();
+		if (current == NULL) {
+			free(head);
+			return NULL;
+		}
+		// market_currency
+		start_pos = find_next_market_type(json, tokens, total_tokens, start_pos, &current->market_currency);
+		if (start_pos == 0) {
+			free(current);
+			continue;
+		}
+		// base_currency
+		current->base_currency = malloc(base_currency_length);
+		strcpy(current->base_currency, base_currency_upper);
+		// market_name
+		current->market_name = malloc(base_currency_length + strlen(current->market_currency) + 13);
+		sprintf(current->market_name, "?c=%s&mk_type=%s", base_currency, current->market_currency);
+		// change market_currency to upper case
+		btc38_all_upper(current->market_currency);
+		// add it to the list
+		if (head == NULL) {
+			head = current;
+		} else {
+			last->next = current;
+		}
+		last = current;
+		start_pos++;
+	}
+	struct Market* market = head;
+	// end of btc_38_parse_market(results, "btc");
+	//struct Market* market = btc38_parse_market(results, "btc");
+	free(json);
 	return market;
 }

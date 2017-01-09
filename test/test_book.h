@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "../include/bridge/book.h"
 
@@ -160,4 +161,30 @@ int test_book_bittrex_url() {
 	free(results);
 
 	return ret;
+}
+
+int test_book_all() {
+	int retVal = 0;
+	struct VendorList* vendorList = vendors_get_all();
+
+	// give the other threads a chance to initialize
+	struct VendorList* currVendorListNode = vendorList;
+	while (currVendorListNode != NULL && !currVendorListNode->vendor->IsInitialized) {
+		sleep(3);
+		if (currVendorListNode->vendor->IsInitialized) {
+			currVendorListNode = currVendorListNode->next;
+		}
+	}
+
+	struct VendorList* vendorsWithMarket = vendors_with_market(vendorList, "BTC", "LTC");
+
+	// should be n
+	if (vendorsWithMarket != NULL && vendorsWithMarket->next == NULL) { // && vendorsWithMarket->next->next == NULL) {
+		retVal = 1;
+	}
+
+	vendor_list_free(vendorsWithMarket, 0);
+	vendor_list_free(vendorList, 1);
+
+	return retVal;
 }

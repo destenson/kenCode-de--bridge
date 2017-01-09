@@ -41,6 +41,9 @@ struct Market* book_bittrex_parse_market(const char* json) {
 	struct Market* last = head;
 	jsmntok_t tokens[65535];
 
+	if (json == NULL)
+		return NULL;
+
 	// parse json
 	int total_tokens = json_parse(json, tokens, 65535);
 	if (total_tokens < 0)
@@ -110,6 +113,9 @@ struct Book* book_bittrex_parse_book(const char* json) {
 	struct Book* last = book;
 	jsmntok_t tokens[65535];
 
+	if (json == NULL) {
+		return NULL;
+	}
 	// parse json
 	int tok_no = json_parse(json, tokens, 65535);
 	if (tok_no < 0)

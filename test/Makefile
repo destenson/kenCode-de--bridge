@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -O0 -I../include -g3 -Wall
-LFLAGS = -lcurl
+LFLAGS = -lpthread -lcurl
 DEPS = test_book.h
 OBJS = testit.o \
 	../book/book.o ../book/mock.o ../book/bittrex.o ../book/btc38.o \
