@@ -38,6 +38,7 @@ void vendor_free(struct Vendor* vendor) {
 	free(vendor->Name);
 	market_free(vendor->current_market);
 	//pthread_mutex_destroy(&vendor->market_mutex);
+	free(vendor);
 }
 
 /*
@@ -63,14 +64,10 @@ void* market_update_loop(void* args) {
 		vendor->IsInitialized = 1;
 		// pause in 2 loops, check every second, then exit loop after timeout
 		int sTotal = 0;
-		//TODO: FOR TETSTING
-		vendor->running = 0;
-		/*
 		while(vendor->running && sTotal < market_timeout) {
 			sleep(1);
 			sTotal++;
 		}
-		*/
 	}
 	//pthread_exit(NULL);
 	return NULL;
@@ -104,7 +101,7 @@ struct Vendor* vendor_get(const char* vendor_name) {
 	//TODO: testing threading
 	pthread_create(&(vendor->scheduler), NULL, market_update_loop, vendor);
 	//vendor->scheduler = thread;
-	pthread_join(vendor->scheduler, NULL);
+	//pthread_join(vendor->scheduler, NULL);
 	//market_update_loop(vendor);
 	return vendor;
 }
