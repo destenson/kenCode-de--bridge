@@ -192,6 +192,7 @@ struct Book* btc38_get_books(const struct Market* market) {
 }
 
 struct Market* btc38_get_markets() {
+	// btc
 	char* url;
 	btc38_build_url("ticker.php?c=all&mk_type=btc", &url);
 	char* json;
@@ -202,7 +203,23 @@ struct Market* btc38_get_markets() {
 		return NULL;
 	}
 	free(url);
-	struct Market* market = btc38_parse_market(json, "btc");
+	struct Market* btc_market = btc38_parse_market(json, "btc");
 	free(json);
+
+	// cny
+	btc38_build_url("ticker.php?c=all&mk_type=cny", &url);
+	retVal = utils_https_get(url, &json);
+	if (retVal != 0) {
+		fprintf(stderr, "HTTP call to %s returned %d\n", url, retVal);
+		free(url);
+		return btc_market;
+	}
+	struct Market* cny_market = btc38_parse_market(json, "cny");
+	// now merge
+	struct Market* market = btc_market;
+	struct Market* last = market;
+	while (last->next != NULL)
+		last = last->next;
+	last->next = cny_market;
 	return market;
 }

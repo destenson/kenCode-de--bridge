@@ -169,22 +169,61 @@ int test_book_all() {
 
 	// give the other threads a chance to initialize
 	struct VendorList* currVendorListNode = vendorList;
-	while (currVendorListNode != NULL && !currVendorListNode->vendor->IsInitialized) {
-		sleep(3);
-		if (currVendorListNode->vendor->IsInitialized) {
+	while (currVendorListNode != NULL) {
+		if (!currVendorListNode->vendor->IsInitialized)
+			sleep(3);
+		else
 			currVendorListNode = currVendorListNode->next;
-		}
 	}
 
 	struct VendorList* vendorsWithMarket = vendors_with_market(vendorList, "BTC", "LTC");
 
 	// should be n
-	if (vendorsWithMarket != NULL && vendorsWithMarket->next == NULL) { // && vendorsWithMarket->next->next == NULL) {
+	if (vendorsWithMarket != NULL && vendorsWithMarket->next != NULL && vendorsWithMarket->next->next == NULL) {
 		retVal = 1;
+	} else {
+		printf("Incorrect number of vendors found.\n");
 	}
 
 	vendor_list_free(vendorsWithMarket, 0);
 	vendor_list_free(vendorList, 1);
 
 	return retVal;
+}
+
+int test_book_poloniex() {
+	int ret = 0;
+	struct Vendor* vendor = NULL;
+	struct Market* market = NULL;
+	struct Book* book = NULL;
+	const struct Market* btc_ltc = NULL;
+
+	vendor = vendor_get("poloniex");
+	if (vendor == NULL)
+		goto exit;
+	market = vendor->markets_get();
+	if (market == NULL)
+		goto exit;
+	btc_ltc = market_get(market, "BTC", "LTC");
+	if (btc_ltc == NULL)
+		goto exit;
+
+	book = vendor->books_get(btc_ltc);
+
+	if (book == NULL)
+		goto exit;
+
+	if (book->next == NULL)
+		goto exit;
+
+	ret = 1;
+
+	exit:
+	if (book != NULL)
+		book_free(book);
+	if (market != NULL)
+		market_free(market);
+	if (vendor != NULL)
+		free(vendor);
+	return ret;
 }

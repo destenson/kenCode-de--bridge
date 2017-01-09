@@ -112,3 +112,6 @@ struct Market* bittrex_get_markets();
 //btc38
 struct Book* btc38_get_books(const struct Market* market);
 struct Market* btc38_get_markets();
+//poloniex
+struct Book* poloniex_get_books(const struct Market* market);
+struct Market* poloniex_get_markets();

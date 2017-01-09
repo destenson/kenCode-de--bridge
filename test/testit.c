@@ -19,7 +19,8 @@ const char* names[] = {
 		"test_book_bittrex",
 		"test_market_bittrex",
 		"test_book_btc38",
-		"test_book_all"
+		"test_book_all",
+		"test_book_poloniex"
 };
 
 int (*funcs[])(void) = {
@@ -28,7 +29,8 @@ int (*funcs[])(void) = {
 		test_book_bittrex,
 		test_market_bittrex,
 		test_book_btc38,
-		test_book_all
+		test_book_all,
+		test_book_poloniex
 };
 
 /**

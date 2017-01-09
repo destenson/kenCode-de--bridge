@@ -2,6 +2,15 @@
 DEBUG = true
 export DEBUG
 
+UNAME := $(shell uname)
+
+ifeq ($(UNAME),Darwin)
+
+SINGLE_THREADED = false
+export SINGLE_THREADED
+
+endif
+
 all:
 	cd book; make all;
 	cd utils; make all;

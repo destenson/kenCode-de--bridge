@@ -143,7 +143,7 @@ int json_get_double_value(const char* data, const jsmntok_t* tokens, int tok_len
  * @param result where to put the result
  */
 void json_get_double(const char* data, const jsmntok_t curr_token, double* result) {
-	if (curr_token.type != JSMN_PRIMITIVE)
+	if (curr_token.type != JSMN_PRIMITIVE && curr_token.type != JSMN_STRING) // we may have to convert from string
 		return;
 	// allocate memory
 	int str_len = curr_token.end - curr_token.start;

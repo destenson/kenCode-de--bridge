@@ -32,8 +32,10 @@ struct Vendor* vendor_new() {
 void vendor_free(struct Vendor* vendor) {
 	//shutdown thread
 	vendor->running = 0;
+#ifndef SINGLE_THREADED
 	void* status;
 	pthread_join(vendor->scheduler, &status);
+#endif
 	// free memory allocations
 	free(vendor->Name);
 	market_free(vendor->current_market);
@@ -41,20 +43,10 @@ void vendor_free(struct Vendor* vendor) {
 	free(vendor);
 }
 
-/*
-struct Market* vendor_get_markets(struct Vendor* vendor) {
-	//pthread_mutex_lock(&vendor->market_mutex);
-	struct Market* mkt = vendor->markets_get();
-	//pthread_mutex_unlock(&vendor->market_mutex);
-	return mkt;
-}
-*/
-
 void* market_update_loop(void* args) {
 	struct Vendor* vendor = (struct Vendor*)args;
 	struct Market* to_be_deleted = NULL;
-	vendor->running = 1;
-	while(vendor->running) {
+	do {
 		// update markets, keeping the old one around for a bit (market_timeout)
 		if (to_be_deleted != NULL) {
 			market_free(to_be_deleted);
@@ -68,8 +60,10 @@ void* market_update_loop(void* args) {
 			sleep(1);
 			sTotal++;
 		}
-	}
-	//pthread_exit(NULL);
+	} while (vendor->running);
+#ifndef SINGLE_THREADED
+	pthread_exit(NULL);
+#endif
 	return NULL;
 }
 
@@ -97,12 +91,16 @@ struct Vendor* vendor_get(const char* vendor_name) {
 		vendor->books_get = btc38_get_books;
 		vendor->markets_get = btc38_get_markets;
 	}
-
-	//TODO: testing threading
+	if (strcmp(vendor_name, "poloniex")==0) {
+		vendor->books_get = poloniex_get_books;
+		vendor->markets_get = poloniex_get_markets;
+	}
+#ifndef SINGLE_THREADED
+	vendor->running = 1;
 	pthread_create(&(vendor->scheduler), NULL, market_update_loop, vendor);
-	//vendor->scheduler = thread;
-	//pthread_join(vendor->scheduler, NULL);
-	//market_update_loop(vendor);
+#else
+	market_update_loop(vendor);
+#endif
 	return vendor;
 }
 
@@ -140,7 +138,8 @@ struct VendorList* vendors_get_all() {
 	vendors->vendor = vendor_get("btc38");
 	vendors->next = vendor_list_new();
 	vendors->next->vendor = vendor_get("bittrex");
-	vendors->next->next = NULL;
+	vendors->next->next = vendor_list_new();
+	vendors->next->next->vendor = vendor_get("poloniex");
 	return vendors;
 }
 
@@ -149,17 +148,22 @@ struct VendorList* vendors_with_market(struct VendorList* head, const char* base
 	struct VendorList* new_list = NULL;
 	struct VendorList* last_added = NULL;
 	struct VendorList* current = head;
-	while (current != NULL && current->vendor->IsInitialized) {
-		const struct Market* mkt = market_get(current->vendor->current_market, base_currency, market_currency);
-		if (mkt != NULL) {
-			if (new_list == NULL) {
-				new_list = vendor_list_new();
-				last_added = new_list;
-			} else {
-				last_added->next = vendor_list_new();
-				last_added = last_added->next;
+	while (current != NULL) {
+		if (current->vendor->IsInitialized) { // ignore vendors that have yet to be initialized
+			// try it the normal way
+			const struct Market* mkt = market_get(current->vendor->current_market, base_currency, market_currency);
+			if (mkt == NULL) // try it the opposite way
+				mkt = market_get(current->vendor->current_market, market_currency, base_currency);
+			if (mkt != NULL) {
+				if (new_list == NULL) {
+					new_list = vendor_list_new();
+					last_added = new_list;
+				} else {
+					last_added->next = vendor_list_new();
+					last_added = last_added->next;
+				}
+				last_added->vendor = current->vendor;
 			}
-			last_added->vendor = current->vendor;
 		}
 		current = current->next;
 	}
