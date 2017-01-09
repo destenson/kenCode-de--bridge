@@ -3,6 +3,48 @@
 
 #include "../include/bridge/book.h"
 
+int verify_book(struct Book* book) {
+	int retVal = 1;
+	// make sure there are bids and asks
+	if (book->ask_price <= 0) {
+		printf("No ask prices in book\n");
+		retVal = 0;
+	}
+	if (book->ask_qty <= 0 ) {
+		printf("No ask quantity in book\n");
+		retVal = 0;
+	}
+	if (book->bid_price <= 0) {
+		printf("No bid prices in book\n");
+		retVal = 0;
+	}
+	if (book->bid_qty <= 0) {
+		printf("No bid quantity in book\n");
+		retVal = 0;
+	}
+	if (book->next == NULL) {
+		printf("Only 1 level deep\n");
+		retVal = 0;
+	}
+	if (book->next->ask_price <= 0) {
+		printf("No ask prices in book\n");
+		retVal = 0;
+	}
+	if (book->next->ask_qty <= 0 ) {
+		printf("No ask quantity in book\n");
+		retVal = 0;
+	}
+	if (book->next->bid_price <= 0) {
+		printf("No bid prices in book\n");
+		retVal = 0;
+	}
+	if (book->next->bid_qty <= 0) {
+		printf("No bid quantity in book\n");
+		retVal = 0;
+	}
+	return retVal;
+}
+
 int test_book_mock() {
 	int retVal = 0;
 	struct Vendor* vendor = NULL;
@@ -81,8 +123,7 @@ int test_book_btc38() {
 
 	if (book == NULL)
 		goto exit;
-
-	if (book->next == NULL)
+	if (verify_book(book) == 0)
 		goto exit;
 
 	ret = 1;
@@ -117,6 +158,9 @@ int test_book_bittrex() {
 	book = bittrex->books_get(btcltc);
 
 	if (book == NULL)
+		goto exit;
+
+	if (verify_book(book) == 0)
 		goto exit;
 
 	if (book->next == NULL)
@@ -185,6 +229,19 @@ int test_book_all() {
 		printf("Incorrect number of vendors found.\n");
 	}
 
+	struct VendorList* current = vendorsWithMarket;
+	while (current != NULL) {
+		const struct Market* btc_ltc_market = market_get(current->vendor->current_market, "BTC", "LTC");
+		struct Book* book = current->vendor->books_get(btc_ltc_market);
+		if (verify_book(book) == 0) {
+			printf("Unable to verify book for vendor ");
+			printf("%s", current->vendor->Name);
+			printf("\n");
+		}
+		book_free(book);
+		current = current->next;
+	}
+
 	vendor_list_free(vendorsWithMarket, 0);
 	vendor_list_free(vendorList, 1);
 
@@ -213,7 +270,7 @@ int test_book_poloniex() {
 	if (book == NULL)
 		goto exit;
 
-	if (book->next == NULL)
+	if (verify_book(book) == 0)
 		goto exit;
 
 	ret = 1;
