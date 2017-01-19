@@ -118,6 +118,10 @@ struct Book* book_new();
  */
 void book_free(struct Book* book);
 
+struct Balance* balance_new();
+
+void balance_free(struct Balance* balance);
+
 // vendors
 // mock (for testing)
 struct Book* mock_get_books(const struct Market* market);

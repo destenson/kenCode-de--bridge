@@ -11,6 +11,7 @@
 #include "bridge/book.h"
 #include "utils/https.h"
 #include "utils/json.h"
+#include "curl/curl.h"
 
 const char* poloniex_url = "https://poloniex.com/";
 // TODO: these are test values. They need to be replaced
@@ -202,6 +203,55 @@ struct Book* poloniex_parse_book(const char* json) {
 	return book;
 }
 
+/***
+ * parse JSON to get balance of a currency
+ */
+struct Balance* poloniex_parse_balance(const char* json) {
+	struct Balance* retVal = NULL;
+	jsmntok_t tokens[1000];
+	int start_pos = 0;
+	int success = 0;
+	int token_position = 0;
+
+	// parse json
+	int num_tokens = json_parse(json, tokens, 1000);
+	if (num_tokens < 0)
+		goto exit;;
+
+	retVal = balance_new();
+	if (retVal == NULL)
+		goto exit;
+
+	token_position = json_find_token(json, tokens, num_tokens, start_pos, "Currency");
+	if (token_position < 0)
+		goto exit;
+	json_get_string(json, tokens[++token_position], &retVal->currency);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Balance");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->balance);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Available");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->available);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Pending");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->pending);
+	success = 1;
+	exit:
+	if (!success) {
+		if (retVal != NULL) {
+			free(retVal);
+			retVal = NULL;
+		}
+	}
+	return retVal;
+}
+
 struct Book* poloniex_get_books(const struct Market* market) {
 	char getorderbook[strlen(market->market_name) + 60];
 	sprintf(getorderbook, "public?command=returnOrderBook&currencyPair=%s&depth=10", market->market_name);
@@ -238,5 +288,19 @@ int polinex_market_sell(const struct Market* currencyPair, double quantity) {
 }
 
 struct Balance* poloniex_balance(const char* currency) {
-	return NULL;
+	const char* template = "tradingApi";
+	int url_len = strlen(poloniex_url) + strlen(template) + 1;
+	char url[url_len];
+	sprintf(url, "%s%s", poloniex_url, template);
+	char* json;
+	struct HttpConnection* http = utils_https_new();
+	utils_https_add_post_parameter(http, "command", "returnCompleteBalances");
+	utils_https_add_header(http, "Key", poloniex_apikey);
+	utils_https_add_header(http, "Sign", utils_https_get_post_parameters(http));
+	utils_https_put(http, url, &json);
+	utils_https_free(http);
+	free(url);
+	struct Balance* retVal = poloniex_parse_balance(json, currency);
+	free(json);
+	return retVal;
 }

@@ -258,3 +258,22 @@ const struct Market* market_get(const struct Market* head, const char* base_curr
 	}
 	return current;
 }
+
+struct Balance* balance_new() {
+	struct Balance* balance = (struct Balance*)malloc(sizeof(struct Balance));
+	if (balance == NULL)
+		return NULL;
+	balance->available = 0.0;
+	balance->balance = 0.0;
+	balance->currency = NULL;
+	balance->pending = 0.0;
+	return balance;
+}
+
+void balance_free(struct Balance* balance) {
+	if (balance != NULL) {
+		if (balance->currency != NULL)
+			free(balance->currency);
+		free(balance);
+	}
+}

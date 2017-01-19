@@ -9,9 +9,9 @@
 #include "utils/https.h"
 #include "utils/json.h"
 
-const char* url = "https://bittrex.com/api/v1.1/";
+const char* bittrex_url = "https://bittrex.com/api/v1.1/";
 // TODO: these are test values. They need to be replaced
-const char* apikey = "55bbbe56a47046ac858f26110b044b6d";
+const char* bittrex_apikey = "55bbbe56a47046ac858f26110b044b6d";
 const char* apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
 
 
@@ -24,14 +24,14 @@ const char* apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
  * @returns the resultant string (that is also in the results parameter)
  */
 char* bittrex_build_url(const char* group, const char* method, const char* nonce, char** results) {
-	int len = strlen(url) + strlen(group) + strlen(method) + strlen(apikey) + 20;
+	int len = strlen(bittrex_url) + strlen(group) + strlen(method) + strlen(apikey) + 20;
 	if (nonce != NULL)
 		len += strlen(nonce);
 	*results = malloc(len);
 	if (strcmp(group, "public") == 0) // public methods don't require apikey or nonce
-		sprintf(*results, "%s%s/%s", url, group, method);
+		sprintf(*results, "%s%s/%s", bittrex_url, group, method);
 	else
-		sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", url, group, method, apikey, nonce);
+		sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, apikey, nonce);
 	return *results;
 }
 
@@ -182,6 +182,55 @@ struct Book* book_bittrex_parse_book(const char* json) {
 	return book;
 }
 
+/***
+ * parse JSON to get balance of a currency
+ */
+struct Balance* bittrex_parse_balance(const char* json) {
+	struct Balance* retVal = NULL;
+	jsmntok_t tokens[1000];
+	int start_pos = 0;
+	int success = 0;
+	int token_position = 0;
+
+	// parse json
+	int num_tokens = json_parse(json, tokens, 1000);
+	if (num_tokens < 0)
+		goto exit;;
+
+	retVal = balance_new();
+	if (retVal == NULL)
+		goto exit;
+
+	token_position = json_find_token(json, tokens, num_tokens, start_pos, "Currency");
+	if (token_position < 0)
+		goto exit;
+	json_get_string(json, tokens[++token_position], &retVal->currency);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Balance");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->balance);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Available");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->available);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "Pending");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->pending);
+	success = 1;
+	exit:
+	if (!success) {
+		if (retVal != NULL) {
+			free(retVal);
+			retVal = NULL;
+		}
+	}
+	return retVal;
+}
+
 struct Book* bittrex_get_books(const struct Market* market) {
 	char getorderbook[50];
 	sprintf(getorderbook, "getorderbook?market=%s-%s&type=%s&depth=50", market->base_currency, market->market_currency, "both");
@@ -223,7 +272,16 @@ int bittrex_market_sell(const struct Market* currencyPair, double quantity) {
 }
 
 struct Balance* bittrex_balance(const char* currency) {
-	return NULL;
+	const char* template = "%saccount/getbalance?apikey=%s&currency=%s";
+	int url_len = strlen(bittrex_url) + strlen(template) + strlen(bittrex_apikey) + strlen(currency) - 2;
+	char url[url_len];
+	sprintf(url, template, bittrex_url, bittrex_apikey, currency);
+	char* json;
+	utils_https_get(url, &json);
+	free(url);
+	struct Balance* retVal = bittrex_parse_balance(json);
+	free(json);
+	return retVal;
 }
 
 
