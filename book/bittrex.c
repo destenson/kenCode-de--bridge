@@ -205,3 +205,25 @@ struct Market* bittrex_get_markets() {
 	free(results);
 	return market;
 }
+
+int bittrex_limit_buy(const struct Market* currencyPair, double rate, double quantity) {
+	return 0;
+}
+
+int bittrex_limit_sell(const struct Market* currencyPair, double rate, double quantity) {
+	return 0;
+}
+
+int bittrex_market_buy(const struct Market* currencyPair, double quantity) {
+	return 0;
+}
+
+int bittrex_market_sell(const struct Market* currencyPair, double quantity) {
+	return 0;
+}
+
+struct Balance* bittrex_balance(const char* currency) {
+	return NULL;
+}
+
+

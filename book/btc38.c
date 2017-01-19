@@ -225,3 +225,24 @@ struct Market* btc38_get_markets() {
 	last->next = cny_market;
 	return market;
 }
+
+int btc38_limit_buy(const struct Market* currencyPair, double rate, double quantity) {
+	return 0;
+}
+
+int btc38_limit_sell(const struct Market* currencyPair, double rate, double quantity) {
+	return 0;
+}
+
+int btc38_market_buy(const struct Market* currencyPair, double quantity) {
+	return 0;
+}
+
+int btc38_market_sell(const struct Market* currencyPair, double quantity) {
+	return 0;
+}
+
+struct Balance* btc38_balance(const char* currency) {
+	return NULL;
+}
+

@@ -26,6 +26,13 @@ struct Market {
 	struct Market* next;
 };
 
+struct Balance {
+	char* currency;
+	double balance;
+	double pending;
+	double available;
+};
+
 /**
  * A collection of function pointers to be used as the interface
  * for a vendor
@@ -35,6 +42,12 @@ struct Vendor {
 	int IsInitialized;
 	struct Book* (*books_get)(const struct Market* market);
 	struct Market* (*markets_get)();
+	int (*limit_buy)(struct Market* currencyPair, double rate, double quantity);
+	int (*limit_sell)(struct Market* currencyPair, double rate, double quantity);
+	int (*market_buy)(const struct Market* currencyPair, double quantity);
+	int (*market_sell)(const struct Market* currencyPair, double quantity);
+	struct Balance* (*balance)(const char* currency);
+
 	// "private" variables
 	pthread_t scheduler;
 	struct Market* current_market;
@@ -112,9 +125,24 @@ struct Market* mock_get_markets();
 // bittrex
 struct Book* bittrex_get_books(const struct Market* market);
 struct Market* bittrex_get_markets();
+int bittrex_limit_buy(const struct Market* currencyPair, double rate, double quantity);
+int bittrex_limit_sell(const struct Market* currencyPair, double rate, double quantity);
+int bittrex_market_buy(const struct Market* currencyPair, double quantity);
+int bittrex_market_sell(const struct Market* currencyPair, double quantity);
+struct Balance* bittrex_balance(const char* currency);
 //btc38
 struct Book* btc38_get_books(const struct Market* market);
 struct Market* btc38_get_markets();
+int btc38_limit_buy(const struct Market* currencyPair, double rate, double quantity);
+int btc38_limit_sell(const struct Market* currencyPair, double rate, double quantity);
+int btc38_market_buy(const struct Market* currencyPair, double quantity);
+int btc38_market_sell(const struct Market* currencyPair, double quantity);
+struct Balance* btc38_balance(const char* currency);
 //poloniex
 struct Book* poloniex_get_books(const struct Market* market);
 struct Market* poloniex_get_markets();
+int poloniex_limit_buy(const struct Market* currencyPair, double rate, double quantity);
+int poloniex_limit_sell(const struct Market* currencyPair, double rate, double quantity);
+int poloniex_market_buy(const struct Market* currencyPair, double quantity);
+int poloniex_market_sell(const struct Market* currencyPair, double quantity);
+struct Balance* poloniex_balance(const char* currency);

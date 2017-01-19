@@ -86,14 +86,29 @@ struct Vendor* vendor_get(const char* vendor_name) {
 	if (strcmp(vendor_name, "bittrex") == 0) {
 		vendor->books_get = bittrex_get_books;
 		vendor->markets_get = bittrex_get_markets;
+		vendor->limit_buy = bittrex_limit_buy;
+		vendor->limit_sell = bittrex_limit_sell;
+		vendor->market_buy = bittrex_market_buy;
+		vendor->market_sell = bittrex_market_sell;
+		vendor->balance = bittrex_balance;
 	}
 	if (strcmp(vendor_name, "btc38") == 0) {
 		vendor->books_get = btc38_get_books;
 		vendor->markets_get = btc38_get_markets;
+		vendor->limit_buy = btc38_limit_buy;
+		vendor->limit_sell = btc38_limit_sell;
+		vendor->market_buy = btc38_market_buy;
+		vendor->market_sell = btc38_market_sell;
+		vendor->balance = btc38_balance;
 	}
 	if (strcmp(vendor_name, "poloniex")==0) {
 		vendor->books_get = poloniex_get_books;
 		vendor->markets_get = poloniex_get_markets;
+		vendor->limit_buy = poloniex_limit_buy;
+		vendor->limit_sell = poloniex_limit_sell;
+		vendor->market_buy = poloniex_market_buy;
+		vendor->market_sell = poloniex_market_sell;
+		vendor->balance = poloniex_balance;
 	}
 #ifndef SINGLE_THREADED
 	vendor->running = 1;

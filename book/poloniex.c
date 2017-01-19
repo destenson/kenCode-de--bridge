@@ -215,3 +215,28 @@ struct Book* poloniex_get_books(const struct Market* market) {
 	return book;
 }
 
+int poloniex_limit_buy(const struct Market* currencyPair, double rate, double quantity) {
+	// POST that includes currencyPair, rate, amount
+	return 0;
+}
+
+int poloniex_limit_sell(const struct Market* currencyPair, double rate, double quantity) {
+	// POST that includes currencyPair, rate, amount
+	return 0;
+}
+
+int polinex_market_buy(const struct Market* currencyPair, double quantity) {
+	// POST that includes currencyPair, rate, amount
+	// set the rate well within the book
+	return 0;
+}
+
+int polinex_market_sell(const struct Market* currencyPair, double quantity) {
+	// POST that includes currencyPair, rate, amount
+	// set the rate well within the book
+	return 0;
+}
+
+struct Balance* poloniex_balance(const char* currency) {
+	return NULL;
+}
