@@ -24,14 +24,14 @@ const char* apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
  * @returns the resultant string (that is also in the results parameter)
  */
 char* bittrex_build_url(const char* group, const char* method, const char* nonce, char** results) {
-	int len = strlen(bittrex_url) + strlen(group) + strlen(method) + strlen(apikey) + 20;
+	int len = strlen(bittrex_url) + strlen(group) + strlen(method) + strlen(bittrex_apikey) + 20;
 	if (nonce != NULL)
 		len += strlen(nonce);
 	*results = malloc(len);
 	if (strcmp(group, "public") == 0) // public methods don't require apikey or nonce
 		sprintf(*results, "%s%s/%s", bittrex_url, group, method);
 	else
-		sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, apikey, nonce);
+		sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, bittrex_apikey, nonce);
 	return *results;
 }
 
@@ -237,8 +237,10 @@ struct Book* bittrex_get_books(const struct Market* market) {
 	char* url;
 	bittrex_build_url("public", getorderbook, NULL, &url);
 	char* results;
-	utils_https_get(url, &results);
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_get(connection, url, &results);
 	free(url);
+	utils_https_free(connection);
 	struct Book* book = book_bittrex_parse_book(results);
 	free(results);
 	return book;
@@ -248,7 +250,9 @@ struct Market* bittrex_get_markets() {
 	char* url;
 	bittrex_build_url("public", "getmarkets", NULL, &url);
 	char* results;
-	utils_https_get(url, &results);
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_get(connection, url, &results);
+	utils_https_free(connection);
 	free(url);
 	struct Market* market = book_bittrex_parse_market(results);
 	free(results);
@@ -277,7 +281,9 @@ struct Balance* bittrex_balance(const char* currency) {
 	char url[url_len];
 	sprintf(url, template, bittrex_url, bittrex_apikey, currency);
 	char* json;
-	utils_https_get(url, &json);
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_get(connection, url, &json);
+	utils_https_free(connection);
 	free(url);
 	struct Balance* retVal = bittrex_parse_balance(json);
 	free(json);

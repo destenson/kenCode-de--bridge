@@ -111,7 +111,9 @@ struct Market* poloniex_get_markets() {
 	char* url;
 	poloniex_build_url("public?command=returnTicker", &url);
 	char* json;
-	int retVal = utils_https_get(url, &json);
+	struct HttpConnection* connection = utils_https_new();
+	int retVal = utils_https_get(connection, url, &json);
+	utils_https_free(connection);
 	if (retVal != 0) {
 		fprintf(stderr, "HTTP call to %s returned %d\n", url, retVal);
 		free(url);
@@ -206,12 +208,12 @@ struct Book* poloniex_parse_book(const char* json) {
 /***
  * parse JSON to get balance of a currency
  */
-struct Balance* poloniex_parse_balance(const char* json) {
+struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 	struct Balance* retVal = NULL;
 	jsmntok_t tokens[1000];
-	int start_pos = 0;
 	int success = 0;
 	int token_position = 0;
+	int currency_position = 0;
 
 	// parse json
 	int num_tokens = json_parse(json, tokens, 1000);
@@ -222,10 +224,19 @@ struct Balance* poloniex_parse_balance(const char* json) {
 	if (retVal == NULL)
 		goto exit;
 
-	token_position = json_find_token(json, tokens, num_tokens, start_pos, "Currency");
-	if (token_position < 0)
-		goto exit;
-	json_get_string(json, tokens[++token_position], &retVal->currency);
+	while (currency_position == 0) {
+		token_position = json_find_token(json, tokens, num_tokens, token_position, "Currency");
+		if (token_position < 0)
+			goto exit;
+		json_get_string(json, tokens[++token_position], &retVal->currency);
+		if (strcmp(currency, retVal->currency) == 0) {
+			currency_position = token_position;
+			break;
+		}
+		free(retVal->currency);
+		retVal->currency = NULL;
+	}
+
 
 	token_position = json_find_token(json, tokens, num_tokens, token_position, "Balance");
 	if (token_position < 0)
@@ -258,7 +269,9 @@ struct Book* poloniex_get_books(const struct Market* market) {
 	char* url;
 	poloniex_build_url(getorderbook, &url);
 	char* results;
-	utils_https_get(url, &results);
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_get(connection, url, &results);
+	utils_https_free(connection);
 	free(url);
 	struct Book* book = poloniex_parse_book(results);
 	free(results);
@@ -275,13 +288,13 @@ int poloniex_limit_sell(const struct Market* currencyPair, double rate, double q
 	return 0;
 }
 
-int polinex_market_buy(const struct Market* currencyPair, double quantity) {
+int poloniex_market_buy(const struct Market* currencyPair, double quantity) {
 	// POST that includes currencyPair, rate, amount
 	// set the rate well within the book
 	return 0;
 }
 
-int polinex_market_sell(const struct Market* currencyPair, double quantity) {
+int poloniex_market_sell(const struct Market* currencyPair, double quantity) {
 	// POST that includes currencyPair, rate, amount
 	// set the rate well within the book
 	return 0;
@@ -296,7 +309,7 @@ struct Balance* poloniex_balance(const char* currency) {
 	struct HttpConnection* http = utils_https_new();
 	utils_https_add_post_parameter(http, "command", "returnCompleteBalances");
 	utils_https_add_header(http, "Key", poloniex_apikey);
-	utils_https_add_header(http, "Sign", utils_https_get_post_parameters(http));
+	utils_https_add_header(http, "Sign", utils_https_encode_parameters(http));
 	utils_https_put(http, url, &json);
 	utils_https_free(http);
 	free(url);

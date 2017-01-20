@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "https.h"
+#include "utils/https.h"
 
 struct MemoryStruct {
 	char* memory;
@@ -31,7 +31,7 @@ static size_t write_memory_callback(void* contents, size_t size, size_t nmemb, v
  * @param results where to store the results. NOTE: memory will be allocated
  * @returns 0 on success, otherwise a negative number that denotes the error
  */
-int utils_https_get(CURL* curl, const char* url, char** results) {
+int utils_https_get(struct HttpConnection* connection, const char* url, char** results) {
 	CURLcode res;
 
 	struct MemoryStruct chunk;
@@ -39,13 +39,13 @@ int utils_https_get(CURL* curl, const char* url, char** results) {
 	chunk.memory = malloc(1);
 	chunk.size = 0;
 
-	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory_callback);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&chunk);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		res = curl_easy_perform(curl);
+	if (connection->curl) {
+		curl_easy_setopt(connection->curl, CURLOPT_URL, url);
+		curl_easy_setopt(connection->curl, CURLOPT_WRITEFUNCTION, write_memory_callback);
+		curl_easy_setopt(connection->curl, CURLOPT_WRITEDATA, (void*)&chunk);
+		curl_easy_setopt(connection->curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+		curl_easy_setopt(connection->curl, CURLOPT_FOLLOWLOCATION, 1L);
+		res = curl_easy_perform(connection->curl);
 		if (res != CURLE_OK) {
 			return -1;
 		} else {
@@ -87,6 +87,7 @@ struct HttpConnection* utils_https_new() {
 	if (http_connection == NULL)
 		return NULL;
 	http_connection->encoded_post_parameters = NULL;
+	http_connection->post_parameters = NULL;
 	http_connection->headers = NULL;
 
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -100,13 +101,15 @@ void utils_https_free(struct HttpConnection* connection) {
 			curl_easy_cleanup(connection->curl);
 		if (connection->encoded_post_parameters != NULL)
 			curl_free(connection->encoded_post_parameters);
+		if (connection->post_parameters != NULL)
+			free(connection->post_parameters);
 		if (connection->headers != NULL)
 			curl_slist_free_all(connection->headers);
 		curl_global_cleanup();
 	}
 }
 
-int utils_https_put(CURL* curl, const char* url, struct curl_slist* header, char* escaped_postfield, char** results) {
+int utils_https_put(struct HttpConnection* connection, const char* url, char** results) {
 	CURLcode res;
 
 	struct MemoryStruct chunk;
@@ -114,14 +117,15 @@ int utils_https_put(CURL* curl, const char* url, struct curl_slist* header, char
 	chunk.memory = malloc(1);
 	chunk.size = 0;
 
-	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, escaped_postfield);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_memory_callback);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&chunk);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		res = curl_easy_perform(curl);
+	if (connection->curl) {
+		curl_easy_setopt(connection->curl, CURLOPT_URL, url);
+		if (connection->post_parameters != NULL)
+			curl_easy_setopt(connection->curl, CURLOPT_POSTFIELDS, utils_https_encode_parameters(connection));
+		curl_easy_setopt(connection->curl, CURLOPT_WRITEFUNCTION, write_memory_callback);
+		curl_easy_setopt(connection->curl, CURLOPT_WRITEDATA, (void*)&chunk);
+		curl_easy_setopt(connection->curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+		curl_easy_setopt(connection->curl, CURLOPT_FOLLOWLOCATION, 1L);
+		res = curl_easy_perform(connection->curl);
 		if (res != CURLE_OK) {
 			return -1;
 		} else {
@@ -130,3 +134,45 @@ int utils_https_put(CURL* curl, const char* url, struct curl_slist* header, char
 	}
 	return 0;
 }
+
+void utils_https_add_post_parameter(struct HttpConnection* http_connection, const char* name, const char* value) {
+	int new_size = 0;
+	int is_blank = 1;
+	if(http_connection->encoded_post_parameters != NULL) {
+		new_size += strlen(http_connection->encoded_post_parameters) +1;
+		is_blank = 0;
+	}
+	new_size += strlen(name) + strlen(value) + 2;
+	char* new_value = malloc(new_size);
+	if (is_blank)
+		sprintf(new_value, "%s=%s", name, value);
+	else {
+		sprintf(new_value, "%s&%s=%s", http_connection->encoded_post_parameters, name, value);
+		free(http_connection->encoded_post_parameters);
+	}
+	http_connection->encoded_post_parameters = new_value;
+}
+
+void utils_https_add_header(struct HttpConnection* http_connection, const char* name, const char* value) {
+
+	int str_length = strlen(name) + 2;
+
+	if (value != NULL) {
+		str_length += strlen(value) + 1;
+	}
+
+	char new_value[str_length];
+
+	if (value == NULL)
+		sprintf(new_value, "%s:", name);
+	else
+		sprintf(new_value, "%s: %s", name, value);
+
+	http_connection->headers = curl_slist_append(http_connection->headers, new_value);
+}
+
+char* utils_https_encode_parameters(struct HttpConnection* http_connection) {
+	http_connection->encoded_post_parameters = curl_easy_escape(http_connection->curl, http_connection->post_parameters, strlen(http_connection->post_parameters));
+	return http_connection->encoded_post_parameters;
+}
+

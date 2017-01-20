@@ -13,9 +13,10 @@ struct Parameter {
 };
 
 struct HttpConnection {
-	CURL* curl = NULL;
-	struct curl_slist* headers = NULL;
-	char* encoded_post_parameters = NULL;
+	CURL* curl;
+	struct curl_slist* headers;
+	char* post_parameters;
+	char* encoded_post_parameters;
 };
 
 
@@ -28,6 +29,12 @@ void utils_https_free(struct HttpConnection* connection);
  * @param results where to store the results. NOTE: memory will be allocated
  * @returns 0 on success, otherwise a negative number that denotes the error
  */
-int utils_https_get(const char* url, char** results);
+int utils_https_get(struct HttpConnection* http_connection, const char* url, char** results);
 
-int utils_https_put(const char* curl, struct PutParameter** parameters, char** results);
+int utils_https_put(struct HttpConnection* http_connection, const char* url, char** results);
+
+void utils_https_add_post_parameter(struct HttpConnection* http_connection, const char* name, const char* value);
+
+void utils_https_add_header(struct HttpConnection* http_connection, const char* name, const char* value);
+
+char* utils_https_encode_parameters(struct HttpConnection* http_connection);

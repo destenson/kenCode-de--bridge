@@ -42,8 +42,8 @@ struct Vendor {
 	int IsInitialized;
 	struct Book* (*books_get)(const struct Market* market);
 	struct Market* (*markets_get)();
-	int (*limit_buy)(struct Market* currencyPair, double rate, double quantity);
-	int (*limit_sell)(struct Market* currencyPair, double rate, double quantity);
+	int (*limit_buy)(const struct Market* currencyPair, double rate, double quantity);
+	int (*limit_sell)(const struct Market* currencyPair, double rate, double quantity);
 	int (*market_buy)(const struct Market* currencyPair, double quantity);
 	int (*market_sell)(const struct Market* currencyPair, double quantity);
 	struct Balance* (*balance)(const char* currency);

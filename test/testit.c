@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 #include "test_book.h"
-#include "test_ws.h"
+//#include "test_ws.h"
 
 int testit(const char* name, int (*func)(void)) {
 	printf("Testing %s...\n", name);

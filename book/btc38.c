@@ -184,7 +184,9 @@ struct Book* btc38_get_books(const struct Market* market) {
 	char* url;
 	btc38_build_url( getorderbook, &url);
 	char* results;
-	utils_https_get(url, &results);
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_get(connection, url, &results);
+	utils_https_free(connection);
 	free(url);
 	struct Book* book = btc38_parse_book(results);
 	free(results);
@@ -196,7 +198,9 @@ struct Market* btc38_get_markets() {
 	char* url;
 	btc38_build_url("ticker.php?c=all&mk_type=btc", &url);
 	char* json;
-	int retVal = utils_https_get(url, &json);
+	struct HttpConnection* connection = utils_https_new();
+	int retVal = utils_https_get(connection, url, &json);
+	utils_https_free(connection);
 	if (retVal != 0) {
 		fprintf(stderr, "HTTP call to %s returned %d\n", url, retVal);
 		free(url);
@@ -208,7 +212,9 @@ struct Market* btc38_get_markets() {
 
 	// cny
 	btc38_build_url("ticker.php?c=all&mk_type=cny", &url);
-	retVal = utils_https_get(url, &json);
+	connection = utils_https_new();
+	retVal = utils_https_get(connection, url, &json);
+	utils_https_free(connection);
 	if (retVal != 0) {
 		fprintf(stderr, "HTTP call to %s returned %d\n", url, retVal);
 		free(url);
