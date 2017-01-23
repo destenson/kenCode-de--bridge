@@ -12,7 +12,7 @@
 const char* bittrex_url = "https://bittrex.com/api/v1.1/";
 // TODO: these are test values. They need to be replaced
 const char* bittrex_apikey = "55bbbe56a47046ac858f26110b044b6d";
-const char* apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
+const char* bittrex_apisecret = "5d7773773d5c481f9ec1afa67227a7b4";
 
 
 /***
@@ -276,16 +276,23 @@ int bittrex_market_sell(const struct Market* currencyPair, double quantity) {
 }
 
 struct Balance* bittrex_balance(const char* currency) {
-	const char* template = "%saccount/getbalance?apikey=%s&currency=%s";
-	int url_len = strlen(bittrex_url) + strlen(template) + strlen(bittrex_apikey) + strlen(currency) - 2;
+	const char* template = "%saccount/getbalance?apikey=%s&nonce=%s&currency=%s";
+	char* nonce = utils_https_get_nonce();
+	int url_len = strlen(bittrex_url) + strlen(template) + strlen(bittrex_apikey) + strlen(currency) + strlen(nonce) - 2;
 	char url[url_len];
-	sprintf(url, template, bittrex_url, bittrex_apikey, currency);
+	sprintf(url, template, bittrex_url, bittrex_apikey, nonce, currency);
+	free(nonce);
+	unsigned char* signature = utils_https_sign((unsigned char*)bittrex_apisecret, (unsigned char*)url);
 	char* json;
 	struct HttpConnection* connection = utils_https_new();
+	utils_https_add_header(connection, "apisign", (char*)signature);
 	utils_https_get(connection, url, &json);
 	utils_https_free(connection);
-	free(url);
+	free(signature);
 	struct Balance* retVal = bittrex_parse_balance(json);
+	if (retVal == NULL) {
+		fprintf(stderr, "Error retrieving balance for %s on Bittrex.com: %s\n", currency, json);
+	}
 	free(json);
 	return retVal;
 }

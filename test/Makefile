@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -O0 -I../include -Wall
-LFLAGS = -lcurl
+CFLAGS = -O0 -I../include -I../../../ipfs/c-libp2p/include -Wall
+LFLAGS = -L../../../ipfs/c-libp2p -lcurl -lp2p -lm
 
 ifdef SINGLE_THREADED
 CFLAGS += -DSINGLE_THREADED

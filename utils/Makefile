@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O0 -I../include -g3 -Wall
+CFLAGS = -O0 -I../include -I../../../ipfs/c-libp2p/include -g3 -Wall
 LFLAGS = 
 DEPS = ../include/utils/https.h
 OBJS =  https.o jsmn.o json.o

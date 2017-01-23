@@ -1,13 +1,13 @@
-
-
 /***
- * All of the connectivity for https://www.bittrex.com
+ * All of the connectivity for https://www.poloniex.com
  */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
 
+#include "mbedtls/md.h"
+#include "libp2p/crypto/encoding/base64.h"
 #include "bridge/book.h"
 #include "utils/https.h"
 #include "utils/json.h"
@@ -16,7 +16,7 @@
 const char* poloniex_url = "https://poloniex.com/";
 // TODO: these are test values. They need to be replaced
 const char* poloniex_apikey = "TFNUBJYV-84RXQBXI-3PONC8MW-3ATNRJ9B";
-const char* poloniex_apisecret = "0ce4c944bce4afa24b9e68166699002b9f780ec4b0b23a6b30b5dc273dd28817bf31c15b4880c89d2de0669f0c7224925fc61ae5e98e59e23fd3e21751c5bf27";
+const unsigned char* poloniex_apisecret = (unsigned char*)"0ce4c944bce4afa24b9e68166699002b9f780ec4b0b23a6b30b5dc273dd28817bf31c15b4880c89d2de0669f0c7224925fc61ae5e98e59e23fd3e21751c5bf27";
 
 
 /***
@@ -210,13 +210,14 @@ struct Book* poloniex_parse_book(const char* json) {
  */
 struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 	struct Balance* retVal = NULL;
-	jsmntok_t tokens[1000];
+	size_t max_tokens = strlen(json) / 4;
+	jsmntok_t tokens[max_tokens];
 	int success = 0;
 	int token_position = 0;
 	int currency_position = 0;
 
 	// parse json
-	int num_tokens = json_parse(json, tokens, 1000);
+	int num_tokens = json_parse(json, tokens, max_tokens);
 	if (num_tokens < 0)
 		goto exit;;
 
@@ -224,34 +225,29 @@ struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 	if (retVal == NULL)
 		goto exit;
 
-	while (currency_position == 0) {
-		token_position = json_find_token(json, tokens, num_tokens, token_position, "Currency");
-		if (token_position < 0)
-			goto exit;
-		json_get_string(json, tokens[++token_position], &retVal->currency);
-		if (strcmp(currency, retVal->currency) == 0) {
-			currency_position = token_position;
-			break;
-		}
-		free(retVal->currency);
-		retVal->currency = NULL;
-	}
-
-
-	token_position = json_find_token(json, tokens, num_tokens, token_position, "Balance");
+	// find the currency
+	token_position = json_find_token(json, tokens, num_tokens, token_position, currency);
 	if (token_position < 0)
 		goto exit;
-	json_get_double(json, tokens[++token_position], &retVal->balance);
+	// add the currency to the Balance object
+	retVal->currency = (char*)malloc(strlen(currency) + 1);
+	strcpy(retVal->currency, currency);
 
-	token_position = json_find_token(json, tokens, num_tokens, token_position, "Available");
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "available");
 	if (token_position < 0)
 		goto exit;
 	json_get_double(json, tokens[++token_position], &retVal->available);
 
-	token_position = json_find_token(json, tokens, num_tokens, token_position, "Pending");
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "onOrders");
 	if (token_position < 0)
 		goto exit;
 	json_get_double(json, tokens[++token_position], &retVal->pending);
+
+	token_position = json_find_token(json, tokens, num_tokens, token_position, "btcValue");
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->balance);
+
 	success = 1;
 	exit:
 	if (!success) {
@@ -300,6 +296,7 @@ int poloniex_market_sell(const struct Market* currencyPair, double quantity) {
 	return 0;
 }
 
+
 struct Balance* poloniex_balance(const char* currency) {
 	const char* template = "tradingApi";
 	int url_len = strlen(poloniex_url) + strlen(template) + 1;
@@ -307,13 +304,22 @@ struct Balance* poloniex_balance(const char* currency) {
 	sprintf(url, "%s%s", poloniex_url, template);
 	char* json;
 	struct HttpConnection* http = utils_https_new();
+	// POST parameters
 	utils_https_add_post_parameter(http, "command", "returnCompleteBalances");
+	char* nonce = utils_https_get_nonce();
+	utils_https_add_post_parameter(http, "nonce", nonce);
+	free(nonce);
+	// headers
 	utils_https_add_header(http, "Key", poloniex_apikey);
-	utils_https_add_header(http, "Sign", utils_https_encode_parameters(http));
+	char* signed_params = (char*)utils_https_sign(poloniex_apisecret, (unsigned char*)http->post_parameters);
+	utils_https_add_header(http, "Sign", signed_params);
+	free(signed_params);
+	// do the work
 	utils_https_put(http, url, &json);
 	utils_https_free(http);
-	free(url);
 	struct Balance* retVal = poloniex_parse_balance(json, currency);
+	if (retVal == NULL)
+		fprintf(stderr, "%s\n", json);
 	free(json);
 	return retVal;
 }

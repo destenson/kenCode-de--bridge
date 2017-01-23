@@ -38,3 +38,12 @@ void utils_https_add_post_parameter(struct HttpConnection* http_connection, cons
 void utils_https_add_header(struct HttpConnection* http_connection, const char* name, const char* value);
 
 char* utils_https_encode_parameters(struct HttpConnection* http_connection);
+
+char* utils_https_get_nonce();
+
+/***
+ * Sign a message using the HMAC-SHA512 method
+ * @param message the message to sign
+ * @returns a pointer to an allocated string that is the signed value
+ */
+unsigned char* utils_https_sign(const unsigned char* key, const unsigned char* message);
