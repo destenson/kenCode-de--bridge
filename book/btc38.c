@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#include "mbedtls/md5.h"
 #include "bridge/book.h"
 #include "utils/https.h"
 #include "utils/json.h"
 
 const char* btc38_url = "http://api.btc38.com/v1/";
 // TODO: these are test values. They need to be replaced
+const char* btc38_userid = "179172";
 const char* btc38_apikey = "7133a888bd686cff84b2b6a934366d3f";
 const char* btc38_apisecret = "70af5f27d79f5ab07822375ae5dbd5e1b50d651766a2d32bf109e1470bdf0e4c";
 
@@ -248,7 +250,87 @@ int btc38_market_sell(const struct Market* currencyPair, double quantity) {
 	return 0;
 }
 
+struct Balance* btc38_parse_balance(const char* currency, const char* json) {
+	struct Balance* retVal = NULL;
+	size_t max_tokens = strlen(json) / 4;
+	jsmntok_t tokens[max_tokens];
+	int success = 0;
+	int token_position = 0;
+
+	// parse json
+	int num_tokens = json_parse(json, tokens, max_tokens);
+	if (num_tokens < 0)
+		goto exit;;
+
+	retVal = balance_new();
+	if (retVal == NULL)
+		goto exit;
+
+	// find the currency
+	char currency_string[17];
+	currency_string[0] = tolower(currency[0]);
+	currency_string[1] = tolower(currency[1]);
+	currency_string[2] = tolower(currency[2]);
+	strcpy(&currency_string[3], "_balance");
+	token_position = json_find_token(json, tokens, num_tokens, token_position, currency_string);
+	if (token_position < 0)
+		goto exit;
+
+	// add the currency to the Balance object
+	retVal->currency = (char*)malloc(strlen(currency) + 1);
+	strcpy(retVal->currency, currency);
+
+	json_get_double(json, tokens[++token_position], &retVal->balance);
+
+	strcpy(&currency_string[3], "_balance_lock");
+	token_position = json_find_token(json, tokens, num_tokens, token_position, currency_string);
+	if (token_position < 0)
+		goto exit;
+	json_get_double(json, tokens[++token_position], &retVal->pending);
+
+	retVal->available = retVal->balance - retVal->pending;
+
+	success = 1;
+	exit:
+	if (!success) {
+		if (retVal != NULL) {
+			free(retVal);
+			retVal = NULL;
+		}
+	}
+	return retVal;
+}
+
 struct Balance* btc38_balance(const char* currency) {
-	return NULL;
+	// build url
+	const char* template = "%sgetMyBalance.php";
+	int url_len = strlen(btc38_url) + strlen(template);
+	char url[url_len];
+	sprintf(url, template, btc38_url);
+	// parameters
+	struct HttpConnection* connection = utils_https_new();
+	utils_https_add_post_parameter(connection, "key", btc38_apikey);
+	char* nonce = utils_https_get_nonce();
+	utils_https_add_post_parameter(connection, "time", nonce);
+	// compute md5
+	unsigned char md5_input[strlen(btc38_apikey) + strlen(btc38_userid) + strlen(btc38_apisecret) + strlen(nonce) + 4];
+	sprintf((char*)md5_input, "%s_%s_%s_%s", btc38_apikey, btc38_userid, btc38_apisecret, nonce);
+	free(nonce);
+	unsigned char md5[16];
+	mbedtls_md5(md5_input, strlen((char*)md5_input), md5);
+	size_t md5_encoded_length;
+	unsigned char* md5_encoded = utils_https_bytes_to_hex_string(md5, 16, &md5_encoded_length);
+	utils_https_add_post_parameter(connection, "md5", (char*)md5_encoded);
+	free(md5_encoded);
+	// finally do the call
+	char* json;
+	utils_https_post(connection, url, &json);
+	utils_https_free(connection);
+	struct Balance* retVal = btc38_parse_balance(currency, json);
+	if (retVal == NULL) {
+		fprintf(stderr, "Error retrieving balance for %s on btc38.com: %s\n", currency, json);
+	}
+	free(json);
+	return retVal;
 }
 

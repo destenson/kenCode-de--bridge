@@ -214,7 +214,6 @@ struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 	jsmntok_t tokens[max_tokens];
 	int success = 0;
 	int token_position = 0;
-	int currency_position = 0;
 
 	// parse json
 	int num_tokens = json_parse(json, tokens, max_tokens);
@@ -315,7 +314,7 @@ struct Balance* poloniex_balance(const char* currency) {
 	utils_https_add_header(http, "Sign", signed_params);
 	free(signed_params);
 	// do the work
-	utils_https_put(http, url, &json);
+	utils_https_post(http, url, &json);
 	utils_https_free(http);
 	struct Balance* retVal = poloniex_parse_balance(json, currency);
 	if (retVal == NULL)

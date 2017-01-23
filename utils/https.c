@@ -111,11 +111,12 @@ void utils_https_free(struct HttpConnection* connection) {
 			free(connection->post_parameters);
 		if (connection->headers != NULL)
 			curl_slist_free_all(connection->headers);
+		free(connection);
 		curl_global_cleanup();
 	}
 }
 
-int utils_https_put(struct HttpConnection* connection, const char* url, char** results) {
+int utils_https_post(struct HttpConnection* connection, const char* url, char** results) {
 	CURLcode res;
 
 	struct MemoryStruct chunk;

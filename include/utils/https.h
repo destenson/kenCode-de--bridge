@@ -31,7 +31,7 @@ void utils_https_free(struct HttpConnection* connection);
  */
 int utils_https_get(struct HttpConnection* http_connection, const char* url, char** results);
 
-int utils_https_put(struct HttpConnection* http_connection, const char* url, char** results);
+int utils_https_post(struct HttpConnection* http_connection, const char* url, char** results);
 
 void utils_https_add_post_parameter(struct HttpConnection* http_connection, const char* name, const char* value);
 
@@ -40,6 +40,7 @@ void utils_https_add_header(struct HttpConnection* http_connection, const char* 
 char* utils_https_encode_parameters(struct HttpConnection* http_connection);
 
 char* utils_https_get_nonce();
+unsigned char* utils_https_bytes_to_hex_string(const unsigned char* bytes, size_t incoming_len, size_t* result_len);
 
 /***
  * Sign a message using the HMAC-SHA512 method

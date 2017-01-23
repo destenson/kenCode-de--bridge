@@ -14,5 +14,7 @@ int test_poloniex_account_balance() {
 	}
 	retVal = 1;
 	exit:
+	balance_free(balance);
+	vendor_free(vendor);
 	return retVal;
 }

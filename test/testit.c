@@ -4,6 +4,7 @@
 #include "test_book.h"
 #include "test_poloniex.h"
 #include "test_bittrex.h"
+#include "test_btc38.h"
 //#include "test_ws.h"
 
 int testit(const char* name, int (*func)(void)) {
@@ -25,7 +26,8 @@ const char* names[] = {
 		"test_book_all",
 		"test_book_poloniex",
 		"test_poloniex_account_balance",
-		"test_bittrex_account_balance"
+		"test_bittrex_account_balance",
+		"test_btc38_account_balance"
 };
 
 int (*funcs[])(void) = {
@@ -37,7 +39,8 @@ int (*funcs[])(void) = {
 		test_book_all,
 		test_book_poloniex,
 		test_poloniex_account_balance,
-		test_bittrex_account_balance
+		test_bittrex_account_balance,
+		test_btc38_account_balance
 };
 
 /**
