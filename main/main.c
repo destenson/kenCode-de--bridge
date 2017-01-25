@@ -6,27 +6,46 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
-typedef char* (*function_pointer)(char*);
-volatile sig_atomic_t run = 1;
+#include "bridge/book.h"
 
-void terminate(int signum) {
-	fprintf(stdout, "Terminating...\n");
-	run = 0;
-}
+// globals
+struct VendorList* vendor_list;
 
+/**
+ * Handle errors
+ */
 void error(const char *msg)
 {
     perror(msg);
     exit(1);
 }
 
-char* get_trading_pairs(char* command_line) {
-	char* result = malloc(15);
-	strcpy(result, "Hello, World!");
-	return result;
+/**
+ * Handle SIGTERM gracefully
+ */
+volatile sig_atomic_t run = 1;
+void terminate(int signum) {
+	fprintf(stdout, "Terminating...\n");
+	run = 0;
 }
 
+// function pointer
+typedef char* (*function_pointer)(char*);
+
+
+char* get_trading_pairs(char* command_line, size_t* len) {
+	struct Market* market_head = market_get_all_trading_pairs(vendor_list);
+	// send it across the wire. Protobuf?
+	return protobuf;
+}
+
+/**
+ * Given what the user passed, find the correct method to call
+ * @param buffer what the user passed
+ * @returns a function pointer that will handle the user request, or NULL if nothing found
+ */
 function_pointer getCommand(char* buffer) {
 	if (strncmp(buffer, "trading_pairs", 13) == 0) {
 		return get_trading_pairs;
@@ -51,11 +70,17 @@ int buffer_append(char** buffer, size_t curr_buffer_length, char* incoming, size
 	return curr_buffer_length + incoming_length;
 }
 
-int do_connect(int sockfd) {
+/**
+ * A connection has happend. This will handle it
+ * @param threadarg a reference to the socket file descriptor
+ * @returns nothing valuable
+ */
+void* do_connect(void* threadarg) {
+	int* sockfd_ptr = (int*)threadarg;
+	int sockfd = *sockfd_ptr;
 	char *buffer = (char*)malloc(0);
 	size_t buffer_length = 0;
 	size_t n = 255;
-	int retVal = 1;
 	// read from the socket
 	while (n >= 0 && n == 255) {
 		char incoming[255];
@@ -67,20 +92,18 @@ int do_connect(int sockfd) {
 	}
 	if (n < 0) {
 		error("ERROR reading from socket");
-		retVal = -1;
 	} else {
 		if (strncmp(buffer, "EXIT", 4) == 0) {
-			int parent = getppid();
-			kill(parent, SIGTERM);
-			retVal = -3;
+			kill(getpid(), SIGTERM);
 		} else {
 			// figure out what the user wanted to do
 			function_pointer command = getCommand(buffer);
 			if (command != NULL) {
-				char* result = command(buffer);
+				size_t result_length = 0;
+				char* result = command(buffer, &result_length);
 				// write back to the socket
-				if (result != NULL) {
-					n = write(sockfd,result,strlen(result));
+				if (result != NULL && result_length > 0) {
+					n = write(sockfd,result, result_length);
 					if (n < 0)
 						error("ERROR writing to socket");
 					free(result);
@@ -95,15 +118,65 @@ int do_connect(int sockfd) {
 	// cleanup
 	free(buffer);
 	close(sockfd);
-	return retVal;
+	return NULL;
 }
 
+/**
+ * Initialize the program
+ */
+int main_init() {
+	vendor_list = vendors_get_all();
+
+	return 0;
+}
+
+/**
+ * Handle incoming connections
+ */
+int main_service_connections() {
+    int sockfd, newsockfd, portno;
+    socklen_t clilen;
+
+    struct sockaddr_in serv_addr, cli_addr;
+    // open socket
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+       error("ERROR opening socket");
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+    portno = atoi(argv[1]);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
+    // bind and listen
+    if (bind(sockfd, (struct sockaddr *) &serv_addr,
+             sizeof(serv_addr)) < 0)
+             error("ERROR on binding");
+    listen(sockfd,5);
+    clilen = sizeof(cli_addr);
+    while(run) {
+		 // blocks until a connection
+		 newsockfd = accept(sockfd,
+					 (struct sockaddr *) &cli_addr,
+					 &clilen);
+		 if (newsockfd < 0)
+			  error("ERROR on accept");
+		 pthread_t thread_id;
+		 int retVal = 0;
+		 // TODO: Implement thread pool
+		 if ( (retVal = pthread_create(&thread_id, NULL, do_connect, &newsockfd)) != 0) {
+			 fprintf(stderr, "Error spawning thread. Return value: %d\n", retVal);
+			 run = 0;
+		 }
+	 }
+    close(sockfd);
+	return 0;
+}
+
+/**
+ * Entry point
+ */
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno;
-     socklen_t clilen;
-     struct sockaddr_in serv_addr, cli_addr;
-
      // handle SIGTERM
      struct sigaction action;
      memset(&action, 0, sizeof(struct sigaction));
@@ -117,43 +190,8 @@ int main(int argc, char *argv[])
          exit(1);
      }
 
-     // open socket
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0)
-        error("ERROR opening socket");
-     bzero((char *) &serv_addr, sizeof(serv_addr));
-     portno = atoi(argv[1]);
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(portno);
-     // bind and listen
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0)
-              error("ERROR on binding");
-     listen(sockfd,5);
-     clilen = sizeof(cli_addr);
-     while(run) {
-		 // blocks until a connection
-		 newsockfd = accept(sockfd,
-					 (struct sockaddr *) &cli_addr,
-					 &clilen);
-		 if (newsockfd < 0)
-			  error("ERROR on accept");
-		 // TODO: Do this in a thread, not a fork.
-		 int pid = fork();
-		 if (pid < 0) {
-			 error("ERROR on fork");
-		 }
-		 if (pid == 0) {
-			 close(sockfd);
-			 do_connect(newsockfd);
-			 exit(0);
-		 }
-		 else {
-			 close(newsockfd);
-		 }
+     main_init();
+     main_service_connections();
 
-	 }
-     close(sockfd);
      return 0;
 }
