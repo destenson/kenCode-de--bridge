@@ -15,7 +15,9 @@ endif
 DEPS = 
 OBJS = main.o \
 	../book/book.o ../book/mock.o ../book/bittrex.o ../book/btc38.o ../book/poloniex.o \
-	../utils/https.o ../utils/jsmn.o ../utils/json.o
+	 ../book/market.o ../book/vendor.o \
+	../utils/https.o ../utils/jsmn.o ../utils/json.o ../utils/logging.o \
+	../../../ipfs/c-protobuf/protobuf.o ../../../ipfs/c-protobuf/varint.o
 
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)

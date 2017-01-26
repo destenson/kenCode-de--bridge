@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "../include/bridge/book.h"
+#include "../include/bridge/vendor.h"
 
 int verify_book(struct Book* book) {
 	int retVal = 1;

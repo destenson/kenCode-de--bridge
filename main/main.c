@@ -9,6 +9,9 @@
 #include <pthread.h>
 
 #include "bridge/book.h"
+#include "bridge/vendor.h"
+#include "bridge/market.h"
+#include "utils/logging.h"
 
 // globals
 struct VendorList* vendor_list;
@@ -32,13 +35,24 @@ void terminate(int signum) {
 }
 
 // function pointer
-typedef char* (*function_pointer)(char*);
+typedef char* (*function_pointer)(char*, size_t*);
 
-
+/***
+ * Retrieves a list of trading pairs in PROTOBUF format
+ * @param command_line the command line
+ * @param len the length of the response in bytes
+ * @returns a char array that is the protobuf formatted response or NULL on error
+ */
 char* get_trading_pairs(char* command_line, size_t* len) {
-	struct Market* market_head = market_get_all_trading_pairs(vendor_list);
-	// send it across the wire. Protobuf?
-	return protobuf;
+	struct Market* market_head = vendor_get_all_trading_pairs(vendor_list);
+	size_t market_protobuf_len = market_list_protobuf_encode_size(market_head);
+	unsigned char* market_protobuf = (unsigned char*)malloc(market_protobuf_len);
+	market_list_protobuf_encode(market_head, market_protobuf, market_protobuf_len, &market_protobuf_len);
+	market_free(market_head);
+	// send it across the wire.
+	*len = market_protobuf_len;
+	logit_int(LOGLEVEL_DEBUG, "Length of output: %d", *len);
+	return (char*)market_protobuf;
 }
 
 /**
@@ -133,8 +147,8 @@ int main_init() {
 /**
  * Handle incoming connections
  */
-int main_service_connections() {
-    int sockfd, newsockfd, portno;
+int main_service_connections(int portno) {
+    int sockfd, newsockfd;
     socklen_t clilen;
 
     struct sockaddr_in serv_addr, cli_addr;
@@ -143,7 +157,6 @@ int main_service_connections() {
     if (sockfd < 0)
        error("ERROR opening socket");
     bzero((char *) &serv_addr, sizeof(serv_addr));
-    portno = atoi(argv[1]);
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portno);
@@ -191,7 +204,7 @@ int main(int argc, char *argv[])
      }
 
      main_init();
-     main_service_connections();
+     main_service_connections(atoi(argv[1]));
 
      return 0;
 }

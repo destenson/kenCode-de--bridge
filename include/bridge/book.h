@@ -2,7 +2,6 @@
 #include <pthread.h>
 
 #include "vendor.h"
-#include "market.h"
 
 /***
  * An interface for the connection to different books from different vendors
@@ -26,6 +25,44 @@ struct Balance {
 	double available;
 };
 
+/**
+ * A market that a vendor has
+ */
+struct Market {
+	char* market_name;
+	char* market_currency;
+	char* base_currency;
+	double min_trade_size;
+	double fee;
+	struct Market* next;
+};
+
+/**
+ * A collection of function pointers to be used as the interface
+ * for a vendor
+ */
+struct Vendor {
+	char* Name;
+	int IsInitialized;
+	struct Book* (*books_get)(const struct Market* market);
+	struct Market* (*markets_get)();
+	int (*limit_buy)(const struct Market* currencyPair, double rate, double quantity);
+	int (*limit_sell)(const struct Market* currencyPair, double rate, double quantity);
+	int (*market_buy)(const struct Market* currencyPair, double quantity);
+	int (*market_sell)(const struct Market* currencyPair, double quantity);
+	struct Balance* (*balance)(const char* currency);
+
+	// "private" variables
+	pthread_t scheduler;
+	struct Market* current_market;
+	int running;
+	//pthread_mutex_t market_mutex;
+};
+
+struct VendorList {
+	struct Vendor* vendor;
+	struct VendorList* next;
+};
 
 /**
  * Search the linked list for a specific market

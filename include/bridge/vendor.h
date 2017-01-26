@@ -1,34 +1,6 @@
 #pragma once
 
 #include "book.h"
-#include "market.h"
-
-/**
- * A collection of function pointers to be used as the interface
- * for a vendor
- */
-struct Vendor {
-	char* Name;
-	int IsInitialized;
-	struct Book* (*books_get)(const struct Market* market);
-	struct Market* (*markets_get)();
-	int (*limit_buy)(const struct Market* currencyPair, double rate, double quantity);
-	int (*limit_sell)(const struct Market* currencyPair, double rate, double quantity);
-	int (*market_buy)(const struct Market* currencyPair, double quantity);
-	int (*market_sell)(const struct Market* currencyPair, double quantity);
-	struct Balance* (*balance)(const char* currency);
-
-	// "private" variables
-	pthread_t scheduler;
-	struct Market* current_market;
-	int running;
-	//pthread_mutex_t market_mutex;
-};
-
-struct VendorList {
-	struct Vendor* vendor;
-	struct VendorList* next;
-};
 
 struct Vendor* vendor_new();
 void vendor_free(struct Vendor* vendor);
@@ -54,3 +26,10 @@ struct VendorList* vendors_with_market(struct VendorList* head, const char* base
  * @returns the struct of function pointers for the vendor
  */
 struct Vendor* vendor_get(const char* vendor_name);
+
+/**
+ * given the VendorList, compile a list of trading pairs available, removing duplicates
+ * @param vendor_head the linked list
+ * @returns a struct Market linked list of all trading pairs, with only the currency names and "fee"
+ */
+struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head);

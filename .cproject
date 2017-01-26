@@ -32,8 +32,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.archiver.macosx.base.1524191285" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.macosx.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1955761828" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1982705556" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
-								<option id="gnu.c.compiler.option.include.paths.203348177" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+								<option id="gnu.c.compiler.option.include.paths.203348177" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/parallels/Development/c/ipfs/c-libp2p/include"/>
+									<listOptionValue builtIn="false" value="/home/parallels/Development/c/ipfs/c-protobuf"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1493332442" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
