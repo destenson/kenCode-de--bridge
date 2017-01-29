@@ -96,7 +96,6 @@ struct HttpConnection* utils_https_new() {
 	http_connection->post_parameters = NULL;
 	http_connection->headers = NULL;
 
-	curl_global_init(CURL_GLOBAL_ALL);
 	http_connection->curl = curl_easy_init();
 	return http_connection;
 }
@@ -112,7 +111,6 @@ void utils_https_free(struct HttpConnection* connection) {
 		if (connection->headers != NULL)
 			curl_slist_free_all(connection->headers);
 		free(connection);
-		curl_global_cleanup();
 	}
 }
 

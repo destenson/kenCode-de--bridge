@@ -4,9 +4,10 @@ export DEBUG
 
 UNAME := $(shell uname)
 
+
 ifeq ($(UNAME),Darwin)
 
-SINGLE_THREADED = false
+SINGLE_THREADED = true
 export SINGLE_THREADED
 
 endif

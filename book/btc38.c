@@ -10,6 +10,7 @@
 #include "bridge/book.h"
 #include "utils/https.h"
 #include "utils/json.h"
+#include "utils/logging.h"
 
 const char* btc38_url = "http://api.btc38.com/v1/";
 // TODO: these are test values. They need to be replaced

@@ -7,11 +7,18 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <curl/curl.h>
 
 #include "bridge/book.h"
 #include "bridge/vendor.h"
 #include "bridge/market.h"
 #include "utils/logging.h"
+
+
+struct SocketDescriptors {
+	int main_socket;
+	int new_socket;
+};
 
 // globals
 struct VendorList* vendor_list;
@@ -30,7 +37,6 @@ void error(const char *msg)
  */
 volatile sig_atomic_t run = 1;
 void terminate(int signum) {
-	fprintf(stdout, "Terminating...\n");
 	run = 0;
 }
 
@@ -90,8 +96,8 @@ int buffer_append(char** buffer, size_t curr_buffer_length, char* incoming, size
  * @returns nothing valuable
  */
 void* do_connect(void* threadarg) {
-	int* sockfd_ptr = (int*)threadarg;
-	int sockfd = *sockfd_ptr;
+	struct SocketDescriptors* sd = (struct SocketDescriptors*)threadarg;
+	int sockfd = sd->new_socket;
 	char *buffer = (char*)malloc(0);
 	size_t buffer_length = 0;
 	size_t n = 255;
@@ -108,7 +114,8 @@ void* do_connect(void* threadarg) {
 		error("ERROR reading from socket");
 	} else {
 		if (strncmp(buffer, "EXIT", 4) == 0) {
-			kill(getpid(), SIGTERM);
+			run = 0;
+			shutdown(sd->main_socket, SHUT_RDWR); // wake up the socket so it shuts down
 		} else {
 			// figure out what the user wanted to do
 			function_pointer command = getCommand(buffer);
@@ -132,6 +139,7 @@ void* do_connect(void* threadarg) {
 	// cleanup
 	free(buffer);
 	close(sockfd);
+	free(sd);
 	return NULL;
 }
 
@@ -156,6 +164,8 @@ int main_service_connections(int portno) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
        error("ERROR opening socket");
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int)) < 0)
+    	error("ERROR setting socket option");
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
@@ -171,16 +181,32 @@ int main_service_connections(int portno) {
 		 newsockfd = accept(sockfd,
 					 (struct sockaddr *) &cli_addr,
 					 &clilen);
-		 if (newsockfd < 0)
-			  error("ERROR on accept");
-		 pthread_t thread_id;
-		 int retVal = 0;
-		 // TODO: Implement thread pool
-		 if ( (retVal = pthread_create(&thread_id, NULL, do_connect, &newsockfd)) != 0) {
-			 fprintf(stderr, "Error spawning thread. Return value: %d\n", retVal);
-			 run = 0;
+		 if (run) {
+			 if (newsockfd < 0)
+				  error("ERROR on accept");
+#ifndef SINGLE_THREADED
+			 int retVal = 0;
+			 // TODO: Implement thread pool
+			 pthread_t thread_id;
+			 struct SocketDescriptors* sd = (struct SocketDescriptors*)malloc(sizeof(struct SocketDescriptors));
+			 sd->main_socket = sockfd;
+			 sd->new_socket = newsockfd;
+			 if ( (retVal = pthread_create(&thread_id, NULL, do_connect, sd)) != 0) {
+				 fprintf(stderr, "Error spawning thread. Return value: %d\n", retVal);
+				 free(sd);
+				 run = 0;
+			 }
+#else
+			 do_connect(&newsockfd);
+#endif
 		 }
 	 }
+	logit(LOGLEVEL_ERROR, "Terminating...");
+	if (vendor_list != NULL) {
+		vendor_list_free(vendor_list, 1);
+	}
+	logit(LOGLEVEL_ERROR, "Threads shut down");
+    logit(LOGLEVEL_ERROR, "Closing main socket");
     close(sockfd);
 	return 0;
 }
@@ -198,13 +224,17 @@ int main(int argc, char *argv[])
 
      // process command line
      if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         fprintf(stderr, "Syntax: %s PORTNO\n", argv[0]);
+         logit(LOGLEVEL_ERROR, "ERROR, no port provided");
+         logit_string(LOGLEVEL_ERROR, "Syntax: %s PORTNO", argv[0]);
          exit(1);
      }
 
+ 	curl_global_init(CURL_GLOBAL_ALL);
+
      main_init();
      main_service_connections(atoi(argv[1]));
+
+	curl_global_cleanup();
 
      return 0;
 }

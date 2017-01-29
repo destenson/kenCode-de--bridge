@@ -134,6 +134,7 @@ void vendor_free(struct Vendor* vendor) {
 	pthread_join(vendor->scheduler, &status);
 #endif
 	// free memory allocations
+	logit_string(LOGLEVEL_DEBUG, "%s has been shut down", vendor->Name);
 	free(vendor->Name);
 	market_free(vendor->current_market);
 	//pthread_mutex_destroy(&vendor->market_mutex);
@@ -141,7 +142,8 @@ void vendor_free(struct Vendor* vendor) {
 }
 
 void* vendor_update_loop(void* args) {
-	int market_timeout = 1800; // 3 minutes
+	int market_timeout = 180; // 3 minutes
+	//int market_timeout = 60;
 	struct Vendor* vendor = (struct Vendor*)args;
 	struct Market* to_be_deleted = NULL;
 	do {
@@ -211,6 +213,7 @@ struct Vendor* vendor_get(const char* vendor_name) {
 	}
 #ifndef SINGLE_THREADED
 	vendor->running = 1;
+	logit_string(LOGLEVEL_DEBUG, "starting thread for %s", vendor->Name);
 	pthread_create(&(vendor->scheduler), NULL, vendor_update_loop, vendor);
 #else
 	vendor_update_loop(vendor);
