@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O0 -Wall -I../include
+CFLAGS = -D_BSD_SOURCE -std=c11 -O0 -Wall -I../include
 LFLAGS =
 
 ifdef SINGLE_THREADED

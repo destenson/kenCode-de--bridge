@@ -79,7 +79,8 @@ struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head) {
 	// iterate the hashtable to build Market linked list
 	struct Market* head = NULL;
 	struct Market* last = NULL;
-	for(khiter_t i = kh_begin(hashtable); i != kh_end(hashtable); i++) {
+	khiter_t i;
+	for(i = kh_begin(hashtable); i != kh_end(hashtable); i++) {
 		if (kh_exist(hashtable, i)) {
 			struct Market* current_market = kh_value(hashtable, i);
 			if (head == NULL) {

@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O0 -I../include -I../../../ipfs/c-libp2p/include -I../../../ipfs/c-protobuf -Wall
+CFLAGS = -std=c11 -D_BSD_SOURCE -O0 -I../include -I../../../ipfs/c-libp2p/include -I../../../ipfs/c-protobuf -Wall
 
 ifdef DEBUG
 CFLAGS += -g3
