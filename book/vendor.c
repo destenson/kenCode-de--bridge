@@ -53,7 +53,7 @@ struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head) {
 				logit_int(LOGLEVEL_DEBUG, "New market successful (1=yes)? %d", market != NULL);
 				market->base_currency = strdup(current_market->base_currency);
 				market->market_currency = strdup(current_market->market_currency);
-				market->fee = 0.01;
+				market->fee = current_market->fee;
 				logit(LOGLEVEL_DEBUG, "About to call kh_value");
 				kh_value(hashtable, i) = market;
 				logit(LOGLEVEL_DEBUG, "kh_value call complete");

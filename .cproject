@@ -35,6 +35,7 @@
 								<option id="gnu.c.compiler.option.include.paths.203348177" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/home/parallels/Development/c/ipfs/c-libp2p/include"/>
 									<listOptionValue builtIn="false" value="/home/parallels/Development/c/ipfs/c-protobuf"/>
+									<listOptionValue builtIn="false" value="/home/parallels/Development/c/json-c"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1493332442" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

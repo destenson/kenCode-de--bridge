@@ -96,6 +96,7 @@ struct Market* book_bittrex_parse_market(const char* json) {
 			free(current);
 			continue;
 		}
+		current->fee = 0.7;
 		// add it to the list
 		if (head == NULL) {
 			head = current;

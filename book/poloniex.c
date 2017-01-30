@@ -94,6 +94,7 @@ struct Market* poloniex_parse_market(const char* json) {
 		current->market_name = malloc(strlen(full_ticker) + 1);
 		strcpy(current->market_name, full_ticker);
 		free(full_ticker);
+		current->fee = 0.7;
 		// add it to the list
 		if (head == NULL) {
 			head = current;

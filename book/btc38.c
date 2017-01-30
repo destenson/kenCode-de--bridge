@@ -35,7 +35,8 @@ char* btc38_build_url(const char* method, char** results) {
 }
 
 void btc38_all_upper(char* string) {
-	for (int i = 0; i < strlen(string); i++) {
+	int i;
+	for (i = 0; i < strlen(string); i++) {
 		string[i] = toupper(string[i]);
 	}
 	return;
@@ -96,6 +97,8 @@ struct Market* btc38_parse_market(const char* json, const char* base_currency) {
 		sprintf(current->market_name, "?c=%s&mk_type=%s", base_currency, current->market_currency);
 		// change market_currency to upper case
 		btc38_all_upper(current->market_currency);
+		// add fee
+		current->fee = 0.7;
 		// add it to the list
 		if (head == NULL) {
 			head = current;

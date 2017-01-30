@@ -8,3 +8,5 @@
 .settings/language.settings.xml
 test/test_bridge
 main/bridge
+client/cgi_client
+client/test_client

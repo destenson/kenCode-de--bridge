@@ -37,6 +37,24 @@ int market_protobuf_encode(struct Market* market, unsigned char* buffer, size_t 
 int market_list_protobuf_encode(struct Market* head, unsigned char* buffer, size_t max_buffer_length, size_t* bytes_written);
 
 /**
+ * Decode a protobuf into a Market struct that is a linked list
+ * @param buffer the protobuf
+ * @param buffer_length the length of the protobuf buffer
+ * @param market a pointer that will contain the market
+ * @returns true(1) on success, otherwise false(0)
+ */
+int market_list_protobuf_decode(unsigned char* buffer, size_t buffer_length, struct Market** market_list);
+
+/**
+ * Decode a protobuf into a Market struct
+ * @param buffer the protobuf
+ * @param buffer_length the length of the protobuf buffer
+ * @param market a pointer that will contain the market
+ * @returns true(1) on success, otherwise false(0)
+ */
+int market_protobuf_decode(unsigned char* buffer, size_t buffer_length, struct Market** market);
+
+/**
  * Create a new struct Market "object"
  */
 struct Market* market_new();
