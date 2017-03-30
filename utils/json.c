@@ -175,8 +175,10 @@ void json_get_string(const char* data, const jsmntok_t curr_token, char** result
 	// allocate memory
 	int str_len = curr_token.end - curr_token.start;
 	*result = malloc(str_len + 1);
-	memset(*result, 0, str_len + 1);
-	// copy in the string
-	strncpy(*result, &data[curr_token.start], str_len);
+	if (*result) {
+		memset(*result, 0, str_len + 1);
+		// copy in the string
+		strncpy(*result, &data[curr_token.start], str_len);
+	}
 	return;
 }

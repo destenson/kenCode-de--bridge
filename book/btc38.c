@@ -30,7 +30,9 @@ const char* btc38_apisecret = "70af5f27d79f5ab07822375ae5dbd5e1b50d651766a2d32bf
 char* btc38_build_url(const char* method, char** results) {
 	int len = strlen(btc38_url) + strlen(method) + 20;
 	*results = malloc(len);
-	sprintf(*results, "%s%s", btc38_url, method);
+	if (*results) {
+		sprintf(*results, "%s%s", btc38_url, method);
+	}
 	return *results;
 }
 
@@ -91,10 +93,14 @@ struct Market* btc38_parse_market(const char* json, const char* base_currency) {
 		}
 		// base_currency
 		current->base_currency = malloc(base_currency_length);
-		strcpy(current->base_currency, base_currency_upper);
+		if (current->base_currency) {
+			strcpy(current->base_currency, base_currency_upper);
+		}
 		// market_name
 		current->market_name = malloc(base_currency_length + strlen(current->market_currency) + 13);
-		sprintf(current->market_name, "?c=%s&mk_type=%s", base_currency, current->market_currency);
+		if (current->market_name) {
+			sprintf(current->market_name, "?c=%s&mk_type=%s", base_currency, current->market_currency);
+		}
 		// change market_currency to upper case
 		btc38_all_upper(current->market_currency);
 		// add fee
@@ -282,7 +288,9 @@ struct Balance* btc38_parse_balance(const char* currency, const char* json) {
 
 	// add the currency to the Balance object
 	retVal->currency = (char*)malloc(strlen(currency) + 1);
-	strcpy(retVal->currency, currency);
+	if (retVal->currency) {
+		strcpy(retVal->currency, currency);
+	}
 
 	json_get_double(json, tokens[++token_position], &retVal->balance);
 

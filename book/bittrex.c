@@ -28,10 +28,12 @@ char* bittrex_build_url(const char* group, const char* method, const char* nonce
 	if (nonce != NULL)
 		len += strlen(nonce);
 	*results = malloc(len);
-	if (strcmp(group, "public") == 0) // public methods don't require apikey or nonce
-		sprintf(*results, "%s%s/%s", bittrex_url, group, method);
-	else
-		sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, bittrex_apikey, nonce);
+	if (*results) {
+		if (strcmp(group, "public") == 0) // public methods don't require apikey or nonce
+			sprintf(*results, "%s%s/%s", bittrex_url, group, method);
+		else
+			sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, bittrex_apikey, nonce);
+	}
 	return *results;
 }
 

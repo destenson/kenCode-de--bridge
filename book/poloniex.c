@@ -30,7 +30,9 @@ const unsigned char* poloniex_apisecret = (unsigned char*)"0ce4c944bce4afa24b9e6
 char* poloniex_build_url(const char* method, char** results) {
 	int len = strlen(poloniex_url) + strlen(method) + 1;
 	*results = malloc(len);
-	sprintf(*results, "%s%s", poloniex_url, method);
+	if (*results) {
+		sprintf(*results, "%s%s", poloniex_url, method);
+	}
 	return *results;
 }
 
@@ -86,13 +88,19 @@ struct Market* poloniex_parse_market(const char* json) {
 			continue;
 		}
 		current->base_currency = malloc(pos - full_ticker + 1);
-		strncpy(current->base_currency, full_ticker, pos - full_ticker);
-		current->base_currency[pos - full_ticker] = 0;
+		if (current->base_currency) {
+			strncpy(current->base_currency, full_ticker, pos - full_ticker);
+			current->base_currency[pos - full_ticker] = 0;
+		}
 		current->market_currency = malloc(strlen(&pos[1]) + 1);
-		strcpy(current->market_currency, &pos[1]);
+		if (current->market_currency) {
+			strcpy(current->market_currency, &pos[1]);
+		}
 		// market_name
 		current->market_name = malloc(strlen(full_ticker) + 1);
-		strcpy(current->market_name, full_ticker);
+		if (current->market_name) {
+			strcpy(current->market_name, full_ticker);
+		}
 		free(full_ticker);
 		current->fee = 0.7;
 		// add it to the list
@@ -231,7 +239,9 @@ struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 		goto exit;
 	// add the currency to the Balance object
 	retVal->currency = (char*)malloc(strlen(currency) + 1);
-	strcpy(retVal->currency, currency);
+	if (retVal->currency) {
+		strcpy(retVal->currency, currency);
+	}
 
 	token_position = json_find_token(json, tokens, num_tokens, token_position, "available");
 	if (token_position < 0)

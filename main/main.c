@@ -50,14 +50,19 @@ typedef char* (*function_pointer)(char*, size_t*);
  * @returns a char array that is the protobuf formatted response or NULL on error
  */
 char* get_trading_pairs(char* command_line, size_t* len) {
+	unsigned char* market_protobuf = NULL;
 	struct Market* market_head = vendor_get_all_trading_pairs(vendor_list);
-	size_t market_protobuf_len = market_list_protobuf_encode_size(market_head);
-	unsigned char* market_protobuf = (unsigned char*)malloc(market_protobuf_len);
-	market_list_protobuf_encode(market_head, market_protobuf, market_protobuf_len, &market_protobuf_len);
-	market_free(market_head);
-	// send it across the wire.
-	*len = market_protobuf_len;
-	logit_int(LOGLEVEL_DEBUG, "Length of output: %d", *len);
+	if (market_head) {
+		size_t market_protobuf_len = market_list_protobuf_encode_size(market_head);
+		market_protobuf = (unsigned char*)malloc(market_protobuf_len);
+		if (market_protobuf) {
+			market_list_protobuf_encode(market_head, market_protobuf, market_protobuf_len, &market_protobuf_len);
+			// send it across the wire.
+			*len = market_protobuf_len;
+			logit_int(LOGLEVEL_DEBUG, "Length of output: %d", *len);
+		}
+		market_free(market_head);
+	}
 	return (char*)market_protobuf;
 }
 
@@ -189,6 +194,8 @@ int main_service_connections(int portno) {
 			 // TODO: Implement thread pool
 			 pthread_t thread_id;
 			 struct SocketDescriptors* sd = (struct SocketDescriptors*)malloc(sizeof(struct SocketDescriptors));
+			 if (sd == NULL)
+				 return 0;
 			 sd->main_socket = sockfd;
 			 sd->new_socket = newsockfd;
 			 if ( (retVal = pthread_create(&thread_id, NULL, do_connect, sd)) != 0) {

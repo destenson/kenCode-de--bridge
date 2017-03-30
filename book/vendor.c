@@ -42,34 +42,38 @@ struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head) {
 			int ret;
 			size_t str_len = strlen(current_market->base_currency) + strlen(current_market->market_currency) + 2;
 			char* key = (char*)malloc(str_len);
-			memset(key, 0, str_len);
-			sprintf(key, "%s~%s", current_market->base_currency, current_market->market_currency);
-			logit_string(LOGLEVEL_DEBUG, "hashtable key: %s", key);
-			khiter_t i = kh_put(khash_market, hashtable, key, &ret);
-			logit_int(LOGLEVEL_DEBUG, "kh_put returned: %d", ret);
-			if (ret == 1) {
-				// not a duplicate key
-				struct Market* market = market_new();
-				logit_int(LOGLEVEL_DEBUG, "New market successful (1=yes)? %d", market != NULL);
-				market->base_currency = strdup(current_market->base_currency);
-				market->market_currency = strdup(current_market->market_currency);
-				market->fee = current_market->fee;
-				logit(LOGLEVEL_DEBUG, "About to call kh_value");
-				kh_value(hashtable, i) = market;
-				logit(LOGLEVEL_DEBUG, "kh_value call complete");
-				// mark key for deletion on disposal of hashtable
-				struct KeyDelete* latest_key = (struct KeyDelete*)malloc(sizeof(struct KeyDelete));
-				latest_key->key = key;
-				latest_key->next = NULL;
-				if (first_key == NULL) {
-					first_key = latest_key;
-					current_key = latest_key;
+			if (key) {
+				memset(key, 0, str_len);
+				sprintf(key, "%s~%s", current_market->base_currency, current_market->market_currency);
+				logit_string(LOGLEVEL_DEBUG, "hashtable key: %s", key);
+				khiter_t i = kh_put(khash_market, hashtable, key, &ret);
+				logit_int(LOGLEVEL_DEBUG, "kh_put returned: %d", ret);
+				if (ret == 1) {
+					// not a duplicate key
+					struct Market* market = market_new();
+					logit_int(LOGLEVEL_DEBUG, "New market successful (1=yes)? %d", market != NULL);
+					market->base_currency = strdup(current_market->base_currency);
+					market->market_currency = strdup(current_market->market_currency);
+					market->fee = current_market->fee;
+					logit(LOGLEVEL_DEBUG, "About to call kh_value");
+					kh_value(hashtable, i) = market;
+					logit(LOGLEVEL_DEBUG, "kh_value call complete");
+					// mark key for deletion on disposal of hashtable
+					struct KeyDelete* latest_key = (struct KeyDelete*)malloc(sizeof(struct KeyDelete));
+					if (latest_key) {
+						latest_key->key = key;
+						latest_key->next = NULL;
+						if (first_key == NULL) {
+							first_key = latest_key;
+							current_key = latest_key;
+						} else {
+							current_key->next = latest_key;
+							current_key = latest_key;
+						}
+					}
 				} else {
-					current_key->next = latest_key;
-					current_key = latest_key;
+					free(key);
 				}
-			} else {
-				free(key);
 			}
 			current_market = current_market->next;
 		}
@@ -112,7 +116,9 @@ struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head) {
  */
 void vendor_set_name(struct Vendor* vendor, const char* name) {
 	vendor->Name = malloc(strlen(name) + 1);
-	strcpy(vendor->Name, name);
+	if (vendor->Name) {
+		strcpy(vendor->Name, name);
+	}
 }
 
 struct Vendor* vendor_new() {
