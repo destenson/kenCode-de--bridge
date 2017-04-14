@@ -155,9 +155,9 @@ void utils_https_add_post_parameter(struct HttpConnection* http_connection, cons
 	new_size += strlen(name) + strlen(value) + 2;
 	char* new_value = malloc(new_size);
 	if (is_blank)
-		sprintf(new_value, "%s=%s", name, value);
+		snprintf(new_value, new_size, "%s=%s", name, value);
 	else {
-		sprintf(new_value, "%s&%s=%s", http_connection->post_parameters, name, value);
+		snprintf(new_value, new_size, "%s&%s=%s", http_connection->post_parameters, name, value);
 		free(http_connection->post_parameters);
 	}
 	http_connection->post_parameters = new_value;
@@ -174,9 +174,9 @@ void utils_https_add_header(struct HttpConnection* http_connection, const char* 
 	char new_value[str_length];
 
 	if (value == NULL)
-		sprintf(new_value, "%s:", name);
+		snprintf(new_value, str_length, "%s:", name);
 	else
-		sprintf(new_value, "%s: %s", name, value);
+		snprintf(new_value, str_length, "%s: %s", name, value);
 
 	http_connection->headers = curl_slist_append(http_connection->headers, new_value);
 }
@@ -190,7 +190,7 @@ char* utils_https_get_nonce() {
 	struct timeval tval;
 	gettimeofday(&tval, NULL);
 	char* ret = (char*)malloc(40);
-	sprintf(ret, "%lu", tval.tv_sec * 1000000 + tval.tv_usec);
+	snprintf(ret, 40, "%lu", tval.tv_sec * 1000000 + tval.tv_usec);
 	return ret;
 }
 
@@ -220,7 +220,7 @@ unsigned char* utils_https_bytes_to_hex_string(const unsigned char* bytes, size_
 	unsigned char* result = (unsigned char*)malloc((*result_len) + 1);
 	memset(result, 0, (*result_len) + 1);
 	for(int i = 0; i < *result_len; i += 2) {
-		sprintf((char*)&result[i], "%02x", bytes[i/2]);
+		snprintf((char*)&result[i], (*result_len) + 1, "%02x", bytes[i/2]);
 	}
 	return result;
 }

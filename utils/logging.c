@@ -22,7 +22,7 @@ void logit(int log_level, char* message) {
 void logit_int(int log_level, char* message, int param) {
 	if (loglevel(log_level)) {
 		char msg[strlen(message) + 12];
-		sprintf(msg, message, param);
+		snprintf(msg, sizeof(msg), message, param);
 		logit(log_level, msg);
 	}
 	return;
@@ -31,7 +31,7 @@ void logit_int(int log_level, char* message, int param) {
 void logit_double(int log_level, char* message, double param) {
 	if (loglevel(log_level)) {
 		char msg[strlen(message) + 20];
-		sprintf(msg, message, param);
+		snprintf(msg, sizeof(msg), message, param);
 		logit(log_level, msg);
 	}
 	return;
@@ -40,7 +40,7 @@ void logit_double(int log_level, char* message, double param) {
 void logit_string(int log_level, char* message, char* param) {
 	if (loglevel(log_level)) {
 		char msg[strlen(message) + strlen(param) + 1];
-		sprintf(msg, message, param);
+		snprintf(msg, sizeof(msg), message, param);
 		logit(log_level, msg);
 	}
 }

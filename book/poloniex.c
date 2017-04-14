@@ -31,7 +31,7 @@ char* poloniex_build_url(const char* method, char** results) {
 	int len = strlen(poloniex_url) + strlen(method) + 1;
 	*results = malloc(len);
 	if (*results) {
-		sprintf(*results, "%s%s", poloniex_url, method);
+		snprintf(*results, len, "%s%s", poloniex_url, method);
 	}
 	return *results;
 }
@@ -271,7 +271,7 @@ struct Balance* poloniex_parse_balance(const char* json, const char* currency) {
 
 struct Book* poloniex_get_books(const struct Market* market) {
 	char getorderbook[strlen(market->market_name) + 60];
-	sprintf(getorderbook, "public?command=returnOrderBook&currencyPair=%s&depth=10", market->market_name);
+	snprintf(getorderbook, sizeof(getorderbook), "public?command=returnOrderBook&currencyPair=%s&depth=10", market->market_name);
 	char* url;
 	poloniex_build_url(getorderbook, &url);
 	char* results;
@@ -311,7 +311,7 @@ struct Balance* poloniex_balance(const char* currency) {
 	const char* template = "tradingApi";
 	int url_len = strlen(poloniex_url) + strlen(template) + 1;
 	char url[url_len];
-	sprintf(url, "%s%s", poloniex_url, template);
+	snprintf(url, sizeof(url), "%s%s", poloniex_url, template);
 	char* json;
 	struct HttpConnection* http = utils_https_new();
 	// POST parameters

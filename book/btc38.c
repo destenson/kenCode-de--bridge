@@ -31,7 +31,7 @@ char* btc38_build_url(const char* method, char** results) {
 	int len = strlen(btc38_url) + strlen(method) + 20;
 	*results = malloc(len);
 	if (*results) {
-		sprintf(*results, "%s%s", btc38_url, method);
+		snprintf(*results, len, "%s%s", btc38_url, method);
 	}
 	return *results;
 }
@@ -68,6 +68,7 @@ struct Market* btc38_parse_market(const char* json, const char* base_currency) {
 	struct Market* current = head;
 	struct Market* last = head;
 	jsmntok_t tokens[65535];
+	size_t len;
 
 	// parse json
 	int total_tokens = json_parse(json, tokens, 65535);
@@ -97,9 +98,10 @@ struct Market* btc38_parse_market(const char* json, const char* base_currency) {
 			strcpy(current->base_currency, base_currency_upper);
 		}
 		// market_name
-		current->market_name = malloc(base_currency_length + strlen(current->market_currency) + 13);
+		len = base_currency_length + strlen(current->market_currency) + 13;
+		current->market_name = malloc(len);
 		if (current->market_name) {
-			sprintf(current->market_name, "?c=%s&mk_type=%s", base_currency, current->market_currency);
+			snprintf(current->market_name, len, "?c=%s&mk_type=%s", base_currency, current->market_currency);
 		}
 		// change market_currency to upper case
 		btc38_all_upper(current->market_currency);
@@ -192,7 +194,7 @@ struct Book* btc38_parse_book(const char* json) {
 
 struct Book* btc38_get_books(const struct Market* market) {
 	char getorderbook[strlen(market->market_name) + 10];
-	sprintf(getorderbook, "%s%s", "depth.php", market->market_name);
+	snprintf(getorderbook, sizeof(getorderbook), "%s%s", "depth.php", market->market_name);
 	char* url;
 	btc38_build_url( getorderbook, &url);
 	char* results;
@@ -318,7 +320,7 @@ struct Balance* btc38_balance(const char* currency) {
 	const char* template = "%sgetMyBalance.php";
 	int url_len = strlen(btc38_url) + strlen(template);
 	char url[url_len];
-	sprintf(url, template, btc38_url);
+	snprintf(url, sizeof(url), template, btc38_url);
 	// parameters
 	struct HttpConnection* connection = utils_https_new();
 	utils_https_add_post_parameter(connection, "key", btc38_apikey);
@@ -326,7 +328,7 @@ struct Balance* btc38_balance(const char* currency) {
 	utils_https_add_post_parameter(connection, "time", nonce);
 	// compute md5
 	unsigned char md5_input[strlen(btc38_apikey) + strlen(btc38_userid) + strlen(btc38_apisecret) + strlen(nonce) + 4];
-	sprintf((char*)md5_input, "%s_%s_%s_%s", btc38_apikey, btc38_userid, btc38_apisecret, nonce);
+	snprintf((char*)md5_input, sizeof(md5_input), "%s_%s_%s_%s", btc38_apikey, btc38_userid, btc38_apisecret, nonce);
 	free(nonce);
 	unsigned char md5[16];
 	mbedtls_md5(md5_input, strlen((char*)md5_input), md5);

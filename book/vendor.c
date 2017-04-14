@@ -44,7 +44,7 @@ struct Market* vendor_get_all_trading_pairs(struct VendorList* vendor_head) {
 			char* key = (char*)malloc(str_len);
 			if (key) {
 				memset(key, 0, str_len);
-				sprintf(key, "%s~%s", current_market->base_currency, current_market->market_currency);
+				snprintf(key, str_len, "%s~%s", current_market->base_currency, current_market->market_currency);
 				logit_string(LOGLEVEL_DEBUG, "hashtable key: %s", key);
 				khiter_t i = kh_put(khash_market, hashtable, key, &ret);
 				logit_int(LOGLEVEL_DEBUG, "kh_put returned: %d", ret);

@@ -172,7 +172,7 @@ char* create_acceptkey(const char* clientkey)
 {
 	size_t len = strlen(clientkey) + 40;
 	char* str = malloc(len);
-	sprintf(str, "%s%s", clientkey, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
+	snprintf(str, len, "%s%s", clientkey, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
 	char* sha = sha1(str);
 	free(str);
 	char* results = base64(sha);

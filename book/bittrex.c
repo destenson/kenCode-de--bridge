@@ -30,9 +30,9 @@ char* bittrex_build_url(const char* group, const char* method, const char* nonce
 	*results = malloc(len);
 	if (*results) {
 		if (strcmp(group, "public") == 0) // public methods don't require apikey or nonce
-			sprintf(*results, "%s%s/%s", bittrex_url, group, method);
+			snprintf(*results, len, "%s%s/%s", bittrex_url, group, method);
 		else
-			sprintf(*results, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, bittrex_apikey, nonce);
+			snprintf(*results, len, "%s%s/%s?apikey=%s&nonce=%s", bittrex_url, group, method, bittrex_apikey, nonce);
 	}
 	return *results;
 }
@@ -236,7 +236,7 @@ struct Balance* bittrex_parse_balance(const char* json) {
 
 struct Book* bittrex_get_books(const struct Market* market) {
 	char getorderbook[50];
-	sprintf(getorderbook, "getorderbook?market=%s-%s&type=%s&depth=50", market->base_currency, market->market_currency, "both");
+	snprintf(getorderbook, sizeof(getorderbook), "getorderbook?market=%s-%s&type=%s&depth=50", market->base_currency, market->market_currency, "both");
 	char* url;
 	bittrex_build_url("public", getorderbook, NULL, &url);
 	char* results;
@@ -283,7 +283,7 @@ struct Balance* bittrex_balance(const char* currency) {
 	char* nonce = utils_https_get_nonce();
 	int url_len = strlen(bittrex_url) + strlen(template) + strlen(bittrex_apikey) + strlen(currency) + strlen(nonce) - 2;
 	char url[url_len];
-	sprintf(url, template, bittrex_url, bittrex_apikey, nonce, currency);
+	snprintf(url, sizeof(url), template, bittrex_url, bittrex_apikey, nonce, currency);
 	free(nonce);
 	unsigned char* signature = utils_https_sign((unsigned char*)bittrex_apisecret, (unsigned char*)url);
 	char* json;
