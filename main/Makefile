@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -std=c11 -D_BSD_SOURCE -O0 -I../include -I../../../ipfs/c-libp2p/include -Wall
+CFLAGS = -std=c11 -D_BSD_SOURCE -O0 -I../include -I../../../ipfs/c-libp2p/include -I../../../ipfs/c-protobuf -Wall
 LFLAGS = -L../../../ipfs/c-libp2p -lcurl -lp2p -lm
 
 ifdef SINGLE_THREADED
