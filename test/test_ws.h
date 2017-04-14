@@ -37,6 +37,8 @@ void websocket_client_free(struct WebSocketClient* client) {
 	wslay_event_context_free(client->ctx);
 	shutdown(client->fd, SHUT_WR);
 	fclose(client->dev_urand);
+	free(client->body);
+	free(client);
 }
 
 int websocket_client_on_read_event(struct WebSocketClient* ws) {
@@ -162,6 +164,7 @@ char* get_random16(char* buf)
 {
   FILE* f = fopen("/dev/urandom", "r");
   fread(buf, 1, 16, f);
+  fclose(f);
   return buf;
 }
 
