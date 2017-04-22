@@ -18,25 +18,27 @@ struct WebSocketClient {
 	  wslay_event_context_ptr ctx;
 	  char* body;
 	  size_t body_off;
-	  FILE* dev_urand;
+	  int dev_urand;
 };
 
 struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callbacks* callbacks, const char* body) {
 	struct WebSocketClient* ws = malloc(sizeof(struct WebSocketClient));
-	ws->fd = fd;
-	wslay_event_context_client_init(&ws->ctx, callbacks, ws);
-	size_t len = strlen(body) + 1;
-	ws->body = malloc(len);
-	strcpy(ws->body, body);
-	ws->body_off = 0;
-	ws->dev_urand = fopen("/dev/urandom", "r");
+	if (ws) {
+		ws->fd = fd;
+		wslay_event_context_client_init(&ws->ctx, callbacks, ws);
+		size_t len = strlen(body) + 1;
+		ws->body = malloc(len);
+		strcpy(ws->body, body);
+		ws->body_off = 0;
+		ws->dev_urand = open("/dev/urandom", O_RDONLY);
+	}
 	return ws;
 }
 
 void websocket_client_free(struct WebSocketClient* client) {
 	wslay_event_context_free(client->ctx);
 	shutdown(client->fd, SHUT_WR);
-	fclose(client->dev_urand);
+	close(client->dev_urand);
 	free(client->body);
 	free(client);
 }
@@ -99,8 +101,7 @@ int websocket_client_fd(struct WebSocketClient* ws)
 
 void websocket_client_get_random(struct WebSocketClient* ws, uint8_t *buf, size_t len)
 {
-	fread(buf, 1, len, ws->dev_urand);
-	//dev_urand_.read((char*)buf, len);
+	read(ws->dev_urand, buf, len);
 }
 
 void websocket_client_set_callbacks(struct WebSocketClient* ws, const struct wslay_event_callbacks *callbacks)
@@ -162,10 +163,13 @@ char* sha1(char* in) {
 
 char* get_random16(char* buf)
 {
-  FILE* f = fopen("/dev/urandom", "r");
-  fread(buf, 1, 16, f);
-  fclose(f);
-  return buf;
+	int fd = open("/dev/urandom", O_RDONLY);
+	if (fd != -1) {
+		read(fd, p, 16);
+		close(fd);
+	}
+	buf[16] = '\0';
+	return buf;
 }
 
 char* create_acceptkey(const char* clientkey)
