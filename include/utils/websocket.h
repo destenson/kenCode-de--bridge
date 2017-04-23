@@ -3,11 +3,11 @@
 #include "wslay/wslay.h"
 
 struct WebSocketClient {
-	  int fd;
-	  wslay_event_context_ptr ctx;
-	  char* body;
-	  size_t body_off;
-	  int dev_urand;
+	int fd;
+	wslay_event_context_ptr ctx;
+	char* body;
+	size_t body_off;
+	int dev_urand;
 };
 
 struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callbacks* callbacks, const char* body);
@@ -27,7 +27,7 @@ int recv_http_handshake(int fd, char* resheader);
 char* base64(char* in);
 char* sha1(char* in);
 char* get_random16(char* buf);
-char* create_acceptkey(const char* clientkey);
+char* websocket_create_acceptkey(const char* clientkey);
 int http_handshake(int fd, const char* host, const char* service, const char* path, char* body);
 ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data, size_t len, int flags, void *user_data);
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *data, size_t len, int flags, void *user_data);

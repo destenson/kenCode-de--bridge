@@ -11,15 +11,9 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 
-#include "wslay/wslay.h"
-
-struct WebSocketClient {
-        int fd;
-        wslay_event_context_ptr ctx;
-        char* body;
-        size_t body_off;
-        int dev_urand;
-};
+#include "utils/websocket.h"
+#include "utils/base64.h"
+#include "utils/sha1.h"
 
 struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callbacks* callbacks, const char* body) {
 	struct WebSocketClient* ws = malloc(sizeof(struct WebSocketClient));
@@ -150,28 +144,67 @@ int recv_http_handshake(int fd, char* resheader)
 	return 0;
 }
 
-char* base64(char* in) {
-	//TODO: Implement
-	return in;
+char* base64(char* in)
+{
+	int len = strlen(in);
+	unsigned char *out = malloc ((len/3 + 1) * 4);
+	base64_encode((unsigned char*)in, out, len, 0);
+	return (char*)out;
 }
 
-char* sha1(char* in) {
-	// TODO: Implement
-	return in;
+void b2hex(uint8_t in, char *out)
+{
+	char h, l;
+	h = in >> 4;	// Higher bits
+	l = in & 0xF;	// Lower bits
+
+	*out++ = h > 9 ?
+		'a' + h - 10 :	// Greater than 9
+		'0' + h;	// Less or equal to 9
+	*out   = l > 9 ?
+		'a' + l - 10 :
+		'0' + l;
+}
+
+char* sha1(char* in)
+{
+	SHA1_CTX sha;
+	uint8_t buf[SHA1_DIGEST_SIZE];
+	char *out = malloc(SHA1_DIGEST_SIZE * 2 + 1);
+	int n;
+
+	SHA1_Init   (&sha);
+	SHA1_Update (&sha, (uint8_t *)in, strlen(in));
+	SHA1_Final  (&sha, buf);
+
+	// Convert to a string.
+	for (n = 0 ; n < SHA1_DIGEST_SIZE ; n++) {
+		b2hex (buf[n], out + n * 2);
+	}
+	out[SHA1_DIGEST_SIZE*2] = '\0';
+
+	return out;
 }
 
 char* get_random16(char* buf)
 {
 	int fd = open("/dev/urandom", O_RDONLY);
+	char *p;
 	if (fd != -1) {
 		read(fd, buf, 16);
+		// Make sure 16 bytes are different from null terminator.
+		for (p = memchr(buf, '\0', 16);
+		     p;
+		     p = memchr(buf, '\0', 16)) {
+			read(fd, p, 1);
+		}
 		close(fd);
 	}
 	buf[16] = '\0';
 	return buf;
 }
 
-char* create_acceptkey(const char* clientkey)
+char* websocket_create_acceptkey(const char* clientkey)
 {
 	size_t len = strlen(clientkey) + 40;
 	char* str = malloc(len);
@@ -221,7 +254,7 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	strncpy(accept_key, keyhdstart, keyhdend-keyhdstart);
 	accept_key[keyhdend-keyhdstart] = 0;
 	int retVal = 0;
-	if(accept_key == create_acceptkey(client_key)) {
+	if(accept_key == websocket_create_acceptkey(client_key)) {
 		char* body_pos = strstr(resheader, "\r\n\r\n");
 		if (body_pos != NULL) {
 			body_pos += 4;
@@ -412,26 +445,4 @@ int communicate(const char *host, const char *service, const char *path,
 		ctl_epollev(epollfd, EPOLL_CTL_MOD, ws);
 	}
 	return ok ? 0 : -1;
-}
-
-int test_connect() {
-	char* host = "127.0.0.1:8090";
-	char* service = "blah";
-
-	// setup callbacks
-	struct wslay_event_callbacks callbacks = {
-		recv_callback,
-		send_callback,
-		genmask_callback,
-		NULL, /* on_frame_recv_start_callback */
-		NULL, /* on_frame_recv_callback */
-		NULL, /* on_frame_recv_end_callback */
-		on_msg_recv_callback
-	};
-	// connect to service
-	// do http handshake
-	// subscribe
-	// process events
-	// disconnect
-	return 1;
 }
