@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <netdb.h>
 #include <fcntl.h>
@@ -7,6 +9,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/epoll.h>
+#include <unistd.h>
 
 #include "wslay/wslay.h"
 
@@ -162,7 +165,7 @@ char* get_random16(char* buf)
 {
 	int fd = open("/dev/urandom", O_RDONLY);
 	if (fd != -1) {
-		read(fd, p, 16);
+		read(fd, buf, 16);
 		close(fd);
 	}
 	buf[16] = '\0';
@@ -198,7 +201,12 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	  if(send_http_handshake(fd, reqheader) == -1) {
 	    return -1;
 	  }
-	  char* resheader;
+	  // Allocate 8k which is the maximum used in the recv_http_handshake call.
+	  char* resheader = malloc(8192);
+	  if (!resheader) {
+	    return -1;
+	  }
+	  *resheader = '\0'; // Initialize memory with an empty string.
 	  if(recv_http_handshake(fd, resheader) == -1) {
 	    return -1;
 	  }
@@ -281,7 +289,7 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
 
 int connect_to(const char *host, const char *service)
 {
-  struct addrinfo hints;
+  struct addrinfo hints, *rp;
   int fd = -1;
   int r;
   memset(&hints, 0, sizeof(struct addrinfo));
@@ -293,7 +301,7 @@ int connect_to(const char *host, const char *service)
 	  fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(r));
     return -1;
   }
-  for(struct addrinfo *rp = res; rp; rp = rp->ai_next) {
+  for(rp = res; rp; rp = rp->ai_next) {
     fd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
     if(fd == -1) {
       continue;
@@ -326,7 +334,7 @@ int make_non_block(int fd)
 
 void ctl_epollev(int epollfd, int op, struct WebSocketClient* ws)
 {
-  epoll_event ev;
+  struct epoll_event ev;
   memset(&ev, 0, sizeof(ev));
   if(websocket_client_want_read(ws)) {
     ev.events |= EPOLLIN;
@@ -334,7 +342,7 @@ void ctl_epollev(int epollfd, int op, struct WebSocketClient* ws)
   if(websocket_client_want_write(ws)) {
     ev.events |= EPOLLOUT;
   }
-  if(epoll_ctl(epollfd, op, ws.fd(), &ev) == -1) {
+  if(epoll_ctl(epollfd, op, ws->fd, &ev) == -1) {
     perror("epoll_ctl");
     exit(EXIT_FAILURE);
   }
@@ -384,15 +392,15 @@ int communicate(const char *host, const char *service, const char *path,
   }
   ctl_epollev(epollfd, EPOLL_CTL_ADD, ws);
   static const size_t MAX_EVENTS = 1;
-  epoll_event events[MAX_EVENTS];
+  struct epoll_event events[MAX_EVENTS];
   int ok = 1;
   while(websocket_client_want_read(ws) || websocket_client_want_write(ws)) {
-    int nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
+    int n, nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
     if(nfds == -1) {
       perror("epoll_wait");
       return -1;
     }
-    for(int n = 0; n < nfds; ++n) {
+    for(n = 0; n < nfds; ++n) {
       if(((events[n].events & EPOLLIN) && websocket_client_on_read_event(ws) != 0) ||
          ((events[n].events & EPOLLOUT) && websocket_client_on_write_event(ws) != 0)) {
         ok = 0;
