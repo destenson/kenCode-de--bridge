@@ -19,9 +19,13 @@ struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callback
 	struct WebSocketClient* ws = malloc(sizeof(struct WebSocketClient));
 	if (ws) {
 		ws->fd = fd;
-		wslay_event_context_client_init(&ws->ctx, callbacks, ws);
 		size_t len = strlen(body) + 1;
 		ws->body = malloc(len);
+		if (ws->body == NULL) {
+			free (ws);
+			return NULL;
+		}
+		wslay_event_context_client_init(&ws->ctx, callbacks, ws);
 		strcpy(ws->body, body);
 		ws->body_off = 0;
 		ws->dev_urand = open("/dev/urandom", O_RDONLY);
@@ -149,7 +153,8 @@ char* base64(char* in)
 {
 	int len = strlen(in);
 	unsigned char *out = malloc ((len/3 + 1) * 4 + 1);
-	base64_encode((unsigned char*)in, out, len, 0);
+	if (out)
+		base64_encode((unsigned char*)in, out, len, 0);
 	return (char*)out;
 }
 
@@ -173,6 +178,9 @@ char* sha1(char* in)
 	uint8_t buf[SHA1_DIGEST_SIZE];
 	char *out = malloc(SHA1_DIGEST_SIZE * 2 + 1);
 	int n;
+
+	if (!out)
+		return NULL;
 
 	SHA1_Init   (&sha);
 	SHA1_Update (&sha, (uint8_t *)in, strlen(in));
@@ -209,9 +217,13 @@ char* websocket_create_acceptkey(const char* clientkey)
 {
 	size_t len = strlen(clientkey) + 40;
 	char* str = malloc(len);
+	if (!str)
+		return NULL;
 	snprintf(str, len, "%s%s", clientkey, "258EAFA5-E914-47DA-95CA-C5AB0DC85B11");
 	char* sha = sha1(str);
 	free(str);
+	if (!sha)
+		return NULL;
 	char* results = base64(sha);
 	free(sha);
 	return results;
@@ -240,6 +252,7 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	}
 	*resheader = '\0'; // Initialize memory with an empty string.
 	if(recv_http_handshake(fd, resheader) == -1) {
+		free(resheader);
 		return -1;
 	}
 	char* keyhdstart = strstr(resheader, "Sec-WebSocket-Accept: ");
@@ -250,8 +263,16 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	}
 	keyhdstart += 22;
 	char* keyhdend = strstr(keyhdstart, "\r\n");
+	if(!keyhdend) {
+		free(resheader);
+		return -1;
+	}
 	char* accept_key = malloc(keyhdend - keyhdstart + 1);
-	strncpy(accept_key, keyhdstart, keyhdend-keyhdstart);
+	if(!accept_key) {
+		free(resheader);
+		return -1;
+	}
+	memcpy(accept_key, keyhdstart, keyhdend-keyhdstart);
 	accept_key[keyhdend-keyhdstart] = 0;
 	int retVal = -1;
 	char *p = websocket_create_acceptkey(client_key);
