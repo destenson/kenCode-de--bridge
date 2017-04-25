@@ -128,14 +128,15 @@ int recv_http_handshake(int fd, char* resheader)
 		if(r <= 0) {
 			return -1;
 		}
+		buf[r] = '\0';
 
 		// append buf
-		if (strlen(buf+r) + strlen(resheader) + 1 > 8192) {
+		if (strlen(resheader) + r + 1 > 8192) {
 			fprintf(stderr, "Too big response header\n");
 			return -1;
 		}
 
-		sprintf(resheader, "%s%s", resheader, buf+r);
+		strcat(resheader, buf);
 
 		if (strstr(resheader, "\r\n\r\n") != NULL) {
 			break;
