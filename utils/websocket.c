@@ -147,7 +147,7 @@ int recv_http_handshake(int fd, char* resheader)
 char* base64(char* in)
 {
 	int len = strlen(in);
-	unsigned char *out = malloc ((len/3 + 1) * 4);
+	unsigned char *out = malloc ((len/3 + 1) * 4 + 1);
 	base64_encode((unsigned char*)in, out, len, 0);
 	return (char*)out;
 }
