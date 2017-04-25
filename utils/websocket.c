@@ -229,7 +229,6 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	         "Sec-WebSocket-Version: 13\r\n"
 	         "\r\n",
 	         path, host, service, client_key);
-	free(client_key);
 	if(send_http_handshake(fd, reqheader) == -1) {
 		return -1;
 	}
@@ -253,7 +252,7 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	char* accept_key = malloc(keyhdend - keyhdstart + 1);
 	strncpy(accept_key, keyhdstart, keyhdend-keyhdstart);
 	accept_key[keyhdend-keyhdstart] = 0;
-	int retVal = 0;
+	int retVal = -1;
 	if(accept_key == websocket_create_acceptkey(client_key)) {
 		char* body_pos = strstr(resheader, "\r\n\r\n");
 		if (body_pos != NULL) {
@@ -262,6 +261,7 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 			retVal = 0;
 		}
 	}
+	free(client_key);
 	free(accept_key);
 	free(resheader);
 	return retVal;
