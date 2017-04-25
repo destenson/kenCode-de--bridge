@@ -253,13 +253,17 @@ int http_handshake(int fd, const char* host, const char* service, const char* pa
 	strncpy(accept_key, keyhdstart, keyhdend-keyhdstart);
 	accept_key[keyhdend-keyhdstart] = 0;
 	int retVal = -1;
-	if(accept_key == websocket_create_acceptkey(client_key)) {
-		char* body_pos = strstr(resheader, "\r\n\r\n");
-		if (body_pos != NULL) {
-			body_pos += 4;
-			strcpy(body, body_pos);
-			retVal = 0;
+	char *p = websocket_create_acceptkey(client_key);
+	if (p) {
+		if(strcmp (accept_key, p) == 0) {
+			char* body_pos = strstr(resheader, "\r\n\r\n");
+			if (body_pos != NULL) {
+				body_pos += 4;
+				strcpy(body, body_pos);
+				retVal = 0;
+			}
 		}
+		free (p);
 	}
 	free(client_key);
 	free(accept_key);
