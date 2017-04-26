@@ -24,7 +24,7 @@ void websocket_client_get_random(struct WebSocketClient* ws, uint8_t *buf, size_
 void websocket_client_set_callbacks(struct WebSocketClient* ws, const struct wslay_event_callbacks *callbacks);
 int send_http_handshake(int fd, const char* reqheader);
 int recv_http_handshake(int fd, char* resheader);
-char* base64(char* in);
+char* base64(char* in, int len);
 char* sha1(char* in);
 char* get_random16(char* buf);
 char* websocket_create_acceptkey(const char* clientkey);

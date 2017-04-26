@@ -149,48 +149,25 @@ int recv_http_handshake(int fd, char* resheader)
 	return 0;
 }
 
-char* base64(char* in)
+char* base64(char* in, int len)
 {
-	int len = strlen(in);
 	unsigned char *out = malloc ((len/3 + 1) * 4 + 1);
 	if (out)
 		base64_encode((unsigned char*)in, out, len, 0);
 	return (char*)out;
 }
 
-void b2hex(uint8_t in, char *out)
-{
-	char h, l;
-	h = in >> 4;	// Higher bits
-	l = in & 0xF;	// Lower bits
-
-	*out++ = h > 9 ?
-		'a' + h - 10 :	// Greater than 9
-		'0' + h;	// Less or equal to 9
-	*out   = l > 9 ?
-		'a' + l - 10 :
-		'0' + l;
-}
-
 char* sha1(char* in)
 {
 	SHA1_CTX sha;
-	uint8_t buf[SHA1_DIGEST_SIZE];
-	char *out = malloc(SHA1_DIGEST_SIZE * 2 + 1);
-	int n;
+	char *out = malloc(SHA1_DIGEST_SIZE);
 
 	if (!out)
 		return NULL;
 
 	SHA1_Init   (&sha);
 	SHA1_Update (&sha, (uint8_t *)in, strlen(in));
-	SHA1_Final  (&sha, buf);
-
-	// Convert to a string.
-	for (n = 0 ; n < SHA1_DIGEST_SIZE ; n++) {
-		b2hex (buf[n], out + n * 2);
-	}
-	out[SHA1_DIGEST_SIZE*2] = '\0';
+	SHA1_Final  (&sha, (uint8_t *)out);
 
 	return out;
 }
@@ -224,7 +201,7 @@ char* websocket_create_acceptkey(const char* clientkey)
 	free(str);
 	if (!sha)
 		return NULL;
-	char* results = base64(sha);
+	char* results = base64(sha, SHA1_DIGEST_SIZE);
 	free(sha);
 	return results;
 }
@@ -232,7 +209,7 @@ char* websocket_create_acceptkey(const char* clientkey)
 int http_handshake(int fd, const char* host, const char* service, const char* path, char* body) {
 	char reqheader[4096];
 	char r16[17];
-	char* client_key = base64(get_random16(r16));
+	char* client_key = base64(get_random16(r16), 16);
 	snprintf(reqheader, 4096,
 	         "GET %s HTTP/1.1\r\n"
 	         "Host: %s:%s\r\n"
