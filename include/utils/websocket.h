@@ -3,11 +3,14 @@
 #include "wslay/wslay.h"
 
 struct WebSocketClient {
+	pthread_t pth;
 	int fd;
 	wslay_event_context_ptr ctx;
 	char* body;
 	size_t body_off;
 	int dev_urand;
+	char recv_buf[8192];
+	volatile int recv_size;
 };
 
 struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callbacks* callbacks, const char* body);
@@ -36,8 +39,10 @@ int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len, void
 void on_msg_recv_callback(wslay_event_context_ptr ctx,
                           const struct wslay_event_on_msg_recv_arg *arg,
                           void *user_data);
+int websocket_recv(struct WebSocketClient *ws, char *data, int size);
+int websocket_send(struct WebSocketClient *ws, char *data, int size);
 int connect_to(const char *host, const char *service);
 int make_non_block(int fd);
 void ctl_epollev(int epollfd, int op, struct WebSocketClient* ws);
-int communicate(const char *host, const char *service, const char *path,
-                const struct wslay_event_callbacks *callbacks);
+struct WebSocketClient*  communicate(const char *host, const char *service, const char *path,
+					const struct wslay_event_callbacks *callbacks);

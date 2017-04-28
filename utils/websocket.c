@@ -10,6 +10,7 @@
 #include <netinet/tcp.h>
 #include <sys/epoll.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "utils/websocket.h"
 #include "utils/base64.h"
@@ -29,11 +30,13 @@ struct WebSocketClient* websocket_client_new(int fd, struct wslay_event_callback
 		strcpy(ws->body, body);
 		ws->body_off = 0;
 		ws->dev_urand = open("/dev/urandom", O_RDONLY);
+		ws->recv_size = 0;
 	}
 	return ws;
 }
 
 void websocket_client_free(struct WebSocketClient* client) {
+	pthread_cancel (client->pth);
 	wslay_event_context_free(client->ctx);
 	shutdown(client->fd, SHUT_WR);
 	close(client->dev_urand);
@@ -314,12 +317,44 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
                           const struct wslay_event_on_msg_recv_arg *arg,
                           void *user_data)
 {
+	struct WebSocketClient *ws = (struct WebSocketClient*)user_data;
+	int size;
+
 	if(!wslay_is_ctrl_frame(arg->opcode)) {
-		struct wslay_event_msg msgarg = {
-			arg->opcode, arg->msg, arg->msg_length
-		};
-		wslay_event_queue_msg(ctx, &msgarg);
+		for(;;) {
+			size = sizeof (ws->recv_buf) - ws->recv_size;
+			if (size >= arg->msg_length)
+				break;
+			sleep (1);
+		}
+		memcpy (ws->recv_buf + ws->recv_size, arg->msg, arg->msg_length);
 	}
+}
+
+int websocket_recv(struct WebSocketClient *ws, char *data, int size)
+{
+	int len = ws->recv_size;
+	if (len > 0) {
+		if (len > size) {
+			len = size;
+			memcpy(data, ws->recv_buf, len);
+			memmove(ws->recv_buf, ws->recv_buf + len, ws->recv_size - len);
+			ws->recv_size -= len;
+		} else {
+			memcpy(data, ws->recv_buf, len);
+			ws->recv_size = 0;
+		}
+	}
+	return len;
+}
+
+int websocket_send(struct WebSocketClient *ws, char *data, int size)
+{
+	struct wslay_event_msg msgarg = {
+		WSLAY_BINARY_FRAME, (uint8_t*)data, size
+	};
+	wslay_event_queue_msg(ws->ctx, &msgarg);
+	return size;
 }
 
 int connect_to(const char *host, const char *service)
@@ -383,47 +418,13 @@ void ctl_epollev(int epollfd, int op, struct WebSocketClient* ws)
 	}
 }
 
-/**
- * Communicate with the websocket
- * @param host the host
- * @param service the service
- * @param path the url path
- * @param callbacks the callbacks to use
- * @returns 0 on success, -1 if not
- */
-int communicate(const char *host, const char *service, const char *path,
-                const struct wslay_event_callbacks *callbacks)
+void *websockets_thread (void *ptr)
 {
-	struct wslay_event_callbacks cb = *callbacks;
-	cb.recv_callback = feed_body_callback;
-	int fd = connect_to(host, service);
-	if(fd == -1) {
-		fprintf(stderr, "Could not connect to the host.\n");
-		return -1;
-	}
-	char body[8192];
-	if(http_handshake(fd, host, service, path, body) == -1) {
-		fprintf(stderr, "Failed handshake\n");
-		close(fd);
-		return -1;
-	}
-	make_non_block(fd);
-	int val = 1;
-	if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val))
-	   == -1) {
-		perror("setsockopt: TCP_NODELAY");
-		return -1;
-	}
-	struct WebSocketClient* ws = websocket_client_new(fd, &cb, body);
-	if(websocket_client_on_read_event(ws) == -1) {
-		return -1;
-	}
-	cb.recv_callback = callbacks->recv_callback;
-	websocket_client_set_callbacks(ws, &cb);
+	struct WebSocketClient* ws = ptr;
 	int epollfd = epoll_create(1);
 	if(epollfd == -1) {
 		perror("epoll_create");
-		return -1;
+		return NULL;
 	}
 	ctl_epollev(epollfd, EPOLL_CTL_ADD, ws);
 	static const size_t MAX_EVENTS = 1;
@@ -433,7 +434,7 @@ int communicate(const char *host, const char *service, const char *path,
 		int n, nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
 		if(nfds == -1) {
 			perror("epoll_wait");
-			return -1;
+			return NULL;
 		}
 		for(n = 0; n < nfds; ++n) {
 		if(((events[n].events & EPOLLIN) && websocket_client_on_read_event(ws) != 0) ||
@@ -447,5 +448,49 @@ int communicate(const char *host, const char *service, const char *path,
 		}
 		ctl_epollev(epollfd, EPOLL_CTL_MOD, ws);
 	}
-	return ok ? 0 : -1;
+	return NULL;
+}
+
+/**
+ * Communicate with the websocket
+ * @param host the host
+ * @param service the service
+ * @param path the url path
+ * @param callbacks the callbacks to use
+ * @returns 0 on success, -1 if not
+ */
+struct WebSocketClient*  communicate(const char *host, const char *service, const char *path,
+					const struct wslay_event_callbacks *callbacks)
+{
+	struct wslay_event_callbacks cb = *callbacks;
+	cb.recv_callback = feed_body_callback;
+	int fd = connect_to(host, service);
+	if(fd == -1) {
+		fprintf(stderr, "Could not connect to the host.\n");
+		return NULL;
+	}
+	char body[8192];
+	if(http_handshake(fd, host, service, path, body) == -1) {
+		fprintf(stderr, "Failed handshake\n");
+		close(fd);
+		return NULL;
+	}
+	make_non_block(fd);
+	int val = 1;
+	if(setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, (socklen_t)sizeof(val))
+	   == -1) {
+		perror("setsockopt: TCP_NODELAY");
+		return NULL;
+	}
+	struct WebSocketClient* ws = websocket_client_new(fd, &cb, body);
+	if(websocket_client_on_read_event(ws) == -1) {
+		return NULL;
+	}
+	cb.recv_callback = callbacks->recv_callback;
+	websocket_client_set_callbacks(ws, &cb);
+	if (pthread_create(&ws->pth, NULL, websockets_thread, ws)) {
+		websocket_client_free (ws);
+		return NULL;
+	}
+	return ws;
 }
