@@ -328,6 +328,7 @@ void on_msg_recv_callback(wslay_event_context_ptr ctx,
 			sleep (1);
 		}
 		memcpy (ws->recv_buf + ws->recv_size, arg->msg, arg->msg_length);
+		ws->recv_size += arg->msg_length;
 	}
 }
 
