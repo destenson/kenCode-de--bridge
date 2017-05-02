@@ -5,7 +5,7 @@
 #include "test_poloniex.h"
 #include "test_bittrex.h"
 #include "test_btc38.h"
-//#include "test_ws.h"
+#include "test_ws.h"
 
 int testit(const char* name, int (*func)(void)) {
 	printf("Testing %s...\n", name);
@@ -18,6 +18,7 @@ int testit(const char* name, int (*func)(void)) {
 }
 
 const char* names[] = {
+		"test_connect",
 		"test_book_mock",
 		"test_book_bittrex_url",
 		"test_book_bittrex",
@@ -31,6 +32,7 @@ const char* names[] = {
 };
 
 int (*funcs[])(void) = {
+		test_connect,
 		test_book_mock,
 		test_book_bittrex_url,
 		test_book_bittrex,

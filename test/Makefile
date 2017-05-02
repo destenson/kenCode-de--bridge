@@ -15,8 +15,8 @@ endif
 DEPS = test_book.h
 OBJS = testit.o \
 	../book/book.o ../book/mock.o ../book/bittrex.o ../book/btc38.o ../book/poloniex.o \
-	 ../book/market.o ../book/vendor.o \
-	 ../utils/https.o ../utils/jsmn.o ../utils/json.o ../utils/logging.o \
+	../book/market.o ../book/vendor.o ../utils/websocket.o ../wslay/lib/*.o \
+	../utils/https.o ../utils/jsmn.o ../utils/json.o ../utils/logging.o \
 	../../../ipfs/c-protobuf/protobuf.o ../../../ipfs/c-protobuf/varint.o
 
 %.o: %.c $(DEPS)
