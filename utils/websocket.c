@@ -460,11 +460,18 @@ void *websockets_thread (void *ptr)
  * @param callbacks the callbacks to use
  * @returns 0 on success, -1 if not
  */
-struct WebSocketClient*  communicate(const char *host, const char *service, const char *path,
-					const struct wslay_event_callbacks *callbacks)
+struct WebSocketClient*  communicate(const char *host, const char *service, const char *path)
 {
-	struct wslay_event_callbacks cb = *callbacks;
-	cb.recv_callback = feed_body_callback;
+	// setup callbacks
+	struct wslay_event_callbacks cb = {
+		feed_body_callback,
+		send_callback,
+		genmask_callback,
+		NULL, /* on_frame_recv_start_callback */
+		NULL, /* on_frame_recv_callback */
+		NULL, /* on_frame_recv_end_callback */
+		on_msg_recv_callback
+	};
 	int fd = connect_to(host, service);
 	if(fd == -1) {
 		fprintf(stderr, "Could not connect to the host.\n");
@@ -487,7 +494,7 @@ struct WebSocketClient*  communicate(const char *host, const char *service, cons
 	if(websocket_client_on_read_event(ws) == -1) {
 		return NULL;
 	}
-	cb.recv_callback = callbacks->recv_callback;
+	cb.recv_callback = recv_callback;
 	websocket_client_set_callbacks(ws, &cb);
 	if (pthread_create(&ws->pth, NULL, websockets_thread, ws)) {
 		websocket_client_free (ws);

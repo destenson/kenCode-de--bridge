@@ -21,17 +21,7 @@ int test_connect() {
 		NULL };
 	int l, i;
 
-	// setup callbacks
-	struct wslay_event_callbacks callbacks = {
-		recv_callback,
-		send_callback,
-		genmask_callback,
-		NULL, /* on_frame_recv_start_callback */
-		NULL, /* on_frame_recv_callback */
-		NULL, /* on_frame_recv_end_callback */
-		on_msg_recv_callback
-	};
-	ws = communicate(host, service, path, &callbacks);
+	ws = communicate(host, service, path);
 	if (!ws) {
 		return 0;
 	}

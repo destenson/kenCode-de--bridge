@@ -44,5 +44,4 @@ int websocket_send(struct WebSocketClient *ws, char *data, int size);
 int connect_to(const char *host, const char *service);
 int make_non_block(int fd);
 void ctl_epollev(int epollfd, int op, struct WebSocketClient* ws);
-struct WebSocketClient*  communicate(const char *host, const char *service, const char *path,
-					const struct wslay_event_callbacks *callbacks);
+struct WebSocketClient*  communicate(const char *host, const char *service, const char *path);
