@@ -460,7 +460,7 @@ void *websockets_thread (void *ptr)
  * @param callbacks the callbacks to use
  * @returns 0 on success, -1 if not
  */
-struct WebSocketClient*  communicate(const char *host, const char *service, const char *path)
+struct WebSocketClient* websocket_connect(const char *host, const char *service, const char *path)
 {
 	// setup callbacks
 	struct wslay_event_callbacks cb = {

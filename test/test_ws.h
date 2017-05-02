@@ -21,7 +21,7 @@ int test_connect() {
 		NULL };
 	int l, i;
 
-	ws = communicate(host, service, path);
+	ws = websocket_connect(host, service, path);
 	if (!ws) {
 		return 0;
 	}
