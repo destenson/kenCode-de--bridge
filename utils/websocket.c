@@ -432,13 +432,13 @@ void *websockets_thread (void *ptr)
 	struct epoll_event events[MAX_EVENTS];
 	int ok = 1;
 	while(websocket_client_want_read(ws) || websocket_client_want_write(ws)) {
-		int n, nfds = epoll_wait(epollfd, events, MAX_EVENTS, -1);
+		int n, nfds = epoll_wait(epollfd, events, MAX_EVENTS, 100);
 		if(nfds == -1) {
 			perror("epoll_wait");
 			return NULL;
 		}
 		for(n = 0; n < nfds; ++n) {
-		if(((events[n].events & EPOLLIN) && websocket_client_on_read_event(ws) != 0) ||
+			if(((events[n].events & EPOLLIN) && websocket_client_on_read_event(ws) != 0) ||
 			   ((events[n].events & EPOLLOUT) && websocket_client_on_write_event(ws) != 0)) {
 				ok = 0;
 				break;
