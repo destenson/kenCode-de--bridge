@@ -11,6 +11,7 @@
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "utils/websocket.h"
 #include "utils/base64.h"
@@ -356,6 +357,27 @@ int websocket_send(struct WebSocketClient *ws, char *data, int size)
 	};
 	wslay_event_queue_msg(ws->ctx, &msgarg);
 	return size;
+}
+
+int websocket_call(struct WebSocketClient *ws, char *json, char *data, int size, int timeout)
+{
+	int l = 0;
+	struct timeval init, now;
+	gettimeofday(&init, NULL);
+	init.tv_sec += timeout;
+	websocket_send (ws, json, strlen (json));
+	for (;;) {
+		l = websocket_recv (ws, data, size - 1);
+		gettimeofday(&now, NULL);
+		if (l || now.tv_sec >= init.tv_sec) {
+			break;
+		}
+		usleep(100);
+	}
+	if (l > 0) {
+		data[l] = '\0';
+	}
+	return l;
 }
 
 int connect_to(const char *host, const char *service)

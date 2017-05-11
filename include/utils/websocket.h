@@ -34,6 +34,7 @@ char* websocket_create_acceptkey(const char* clientkey);
 int http_handshake(int fd, const char* host, const char* service, const char* path, char* body);
 ssize_t send_callback(wslay_event_context_ptr ctx, const uint8_t *data, size_t len, int flags, void *user_data);
 ssize_t recv_callback(wslay_event_context_ptr ctx, uint8_t *data, size_t len, int flags, void *user_data);
+int websocket_call(struct WebSocketClient *ws, char *json, char *data, int size, int timeout);
 ssize_t feed_body_callback(wslay_event_context_ptr ctx, uint8_t *data, size_t len, int flags, void *user_data);
 int genmask_callback(wslay_event_context_ptr ctx, uint8_t *buf, size_t len, void *user_data);
 void on_msg_recv_callback(wslay_event_context_ptr ctx,

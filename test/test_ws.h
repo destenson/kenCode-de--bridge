@@ -19,7 +19,7 @@ int test_connect() {
 		"{\"method\": \"call\", \"params\": [2, \"set_subscribe_callback\", [5, false]], \"id\": 4}",
 		"{\"method\": \"call\", \"params\": [2, \"get_objects\", [[\"2.1.0\"]]], \"id\": 5}",
 		NULL };
-	int l, i;
+	int i, timeout = 60;
 
 	ws = websocket_connect(host, service, path);
 	if (!ws) {
@@ -27,12 +27,7 @@ int test_connect() {
 	}
 	for (i = 0 ; tst_json[i] ; i++) {
 		fprintf (stderr, "> %s\n", tst_json[i]);
-		websocket_send (ws, tst_json[i], strlen (tst_json[i]));
-		do {
-			l = websocket_recv (ws, buf, sizeof(buf) - 1);
-		} while (l == 0);
-		if (l > 0) {
-			buf[l] = '\0';
+		if (websocket_call(ws, tst_json[i], buf, sizeof(buf), timeout) > 0) {
 			fprintf (stderr, "< %s\n", buf);
 		} else {
 			return 0;
